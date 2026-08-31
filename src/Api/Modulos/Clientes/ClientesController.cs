@@ -1,9 +1,9 @@
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using DeliveryApp.Infraestrutura.Orm;
+using DeliveryApp.WebApi.Compartilhado;
 using DeliveryApp.WebApi.Compartilhado.Auth;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +20,6 @@ public sealed class ClientesController(
     JwtProvider jwtProvider
 ) : ControllerBase
 {
-
     [AllowAnonymous]
     [HttpPost("cadastro")]
     public async Task<ActionResult<AutenticacaoClienteResponse>> Cadastrar(
@@ -32,13 +31,11 @@ public sealed class ClientesController(
         var erros = cliente.Validar();
 
         if (erros.Count > 0)
-        {
-            return BadRequest();
-        }
+            return this.ErroDeValidacao(erros);
 
         if (await dbContext.Clientes.AnyAsync(registro => registro.Cpf == cliente.Cpf))
         {
-            return Conflict();
+            return this.Conflito("Já existe um cliente cadastrado com este CPF.");
         }
 
         var usuario = new IdentityUser<Guid>
@@ -53,13 +50,13 @@ public sealed class ClientesController(
             var resultadoUsuario = await userManager.CreateAsync(usuario, request.Senha);
 
             if (!resultadoUsuario.Succeeded)
-                return BadRequest();
+                return this.ErrosDeCriacaoUsuario(resultadoUsuario);
 
             var tipoUsuario = TipoUsuario.Cliente.ToString();
 
-            var resultadoRole = await roleManager.FindByNameAsync(tipoUsuario);
+            var resultadoPapel = await roleManager.FindByNameAsync(tipoUsuario);
 
-            if (resultadoRole is null)
+            if (resultadoPapel is null)
             {
                 await roleManager.CreateAsync(new IdentityRole<Guid>
                 {
@@ -70,13 +67,13 @@ public sealed class ClientesController(
                 });
             }
 
-            var resultadoInclusaoRole = await userManager.AddToRoleAsync(usuario, tipoUsuario);
+            var resultadoInclusaoPapel = await userManager.AddToRoleAsync(usuario, tipoUsuario);
 
-            if (!resultadoInclusaoRole.Succeeded)
+            if (!resultadoInclusaoPapel.Succeeded)
             {
                 await userManager.DeleteAsync(usuario);
 
-                return StatusCode(500);
+                return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
             }
 
             dbContext.Clientes.Add(cliente);
@@ -85,7 +82,7 @@ public sealed class ClientesController(
 
             var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 
-            return StatusCode(StatusCodes.Status201Created, new AutenticacaoClienteResponse(
+            return Created(string.Empty, new AutenticacaoClienteResponse(
                 usuario.Id,
                 jwt.AccessToken,
                 jwt.DataExpiracaoEmUtc
@@ -95,7 +92,9 @@ public sealed class ClientesController(
         {
             await userManager.DeleteAsync(usuario);
 
-            return Conflict();
+            return this.Conflito(
+                "Já existe um cliente cadastrado com este email ou CPF."
+            );
         }
     }
 
@@ -108,7 +107,7 @@ public sealed class ClientesController(
         var usuario = await userManager.FindByEmailAsync(request.Email.Trim());
 
         if (usuario is null)
-            return Unauthorized();
+            return this.CredenciaisInvalidas();
 
         var resultadoAutenticacao = await signInManager.CheckPasswordSignInAsync(
             usuario,
@@ -117,7 +116,7 @@ public sealed class ClientesController(
         );
 
         if (!resultadoAutenticacao.Succeeded)
-            return Unauthorized();
+            return this.CredenciaisInvalidas();
 
         var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 
