@@ -2,148 +2,85 @@
 
 Desenvolvido durante o curso Fullstack da [Academia do Programador 2026](https://www.academiadoprogramador.net).
 
-API para gerenciamento de clientes e estabelecimentos de uma plataforma de pedidos e entregas, com autenticação JWT, isolamento de dados por usuário e persistência em SQL Server.
+API REST em .NET 10 para gerenciamento de clientes e estabelecimentos de uma plataforma de pedidos e entregas, com ASP.NET Core Identity, autenticação JWT e persistência em PostgreSQL.
 
-## Especificação funcional
+## Referência funcional
 
-Cada módulo apresenta primeiro as entidades e suas propriedades. Em seguida, são descritas as regras de negócio e os comportamentos implementados.
+### Entidade `Cliente`
 
-### 1. Módulo de usuários e autenticação
+| Propriedade | Descrição                                                                    |
+| ----------- | ---------------------------------------------------------------------------- |
+| `Id`        | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1.  |
+| `Nome`      | Nome do cliente, com 2 a 100 caracteres.                                     |
+| `Cpf`       | Documento único do cliente, composto por exatamente 11 dígitos.              |
 
-A autenticação utiliza ASP.NET Core Identity e separa os acessos conforme o tipo de perfil associado ao usuário.
+### Cadastro de clientes
 
-#### Tipos de usuário
+- cria o cliente e o usuário do Identity com o mesmo identificador (`Guid` versão 7);
+- exige nome com 2 a 100 caracteres;
+- exige CPF com exatamente 11 dígitos;
+- impede a duplicidade de CPF por validação e índice único no banco;
+- exige email único;
+- exige senha com pelo menos 8 caracteres, um dígito e um caractere não alfanumérico;
+- associa o usuário ao papel `Cliente`;
+- retorna um token JWT após o cadastro.
 
-| Tipo              | Descrição                                                      |
-| ----------------- | -------------------------------------------------------------- |
-| `Cliente`         | Consumidor autorizado a acessar os dados do próprio perfil.    |
-| `Estabelecimento` | Parceiro autorizado a administrar o estabelecimento vinculado. |
+### Autenticação
 
-#### Regras de negócio
+- autentica o cliente por email e senha;
+- bloqueia a conta por 5 minutos após 5 tentativas malsucedidas;
+- retorna uma mensagem genérica quando as credenciais são inválidas;
+- emite um JWT assinado com HMAC SHA-256 contendo o identificador, o email e o papel do usuário;
+- utiliza validade configurável, de 60 minutos por padrão, e tolerância de 30 segundos na validação.
 
-##### Cadastro
-
-- O email deve ser único.
-- A senha deve possuir no mínimo oito caracteres, um dígito e um caractere não alfanumérico.
-- Cada identidade deve receber o papel correspondente ao fluxo de cadastro utilizado.
-- As credenciais e as chaves de assinatura não são armazenadas no código-fonte.
-
-##### Autenticação
-
-- Clientes e estabelecimentos possuem fluxos de login separados.
-- O token JWT contém o identificador do usuário, o email e o papel de acesso.
-- O token de autenticação possui duração configurável.
-- Após cinco tentativas malsucedidas, a conta é bloqueada por cinco minutos.
-- Credenciais inválidas retornam uma resposta genérica, sem revelar qual dado está incorreto.
-
-##### Autorização
-
-- Os endpoints são protegidos por autenticação por padrão.
-- Endpoints públicos são identificados explicitamente.
-- Operações administrativas validam o vínculo entre o usuário autenticado e o perfil de domínio.
-- Um usuário não pode consultar ou alterar dados privados pertencentes a outro usuário.
-
-### 2. Módulo de clientes
-
-#### Entidade `Cliente`
-
-| Propriedade | Descrição                                           |
-| ----------- | --------------------------------------------------- |
-| `ID`        | Identificador do cliente e da identidade associada. |
-| `Nome`      | Nome do cliente.                                    |
-| `CPF`       | Documento normalizado do cliente.                   |
-
-#### Regras de negócio
-
-##### Cadastro
-
-- O nome deve possuir entre 2 e 100 caracteres.
-- O CPF deve possuir exatamente 11 dígitos.
-- Pontos, traços e espaços do CPF são removidos antes da validação.
-- Não é permitido cadastrar dois clientes com o mesmo CPF.
-- O email deve ser único entre todos os usuários.
-- O cliente e sua identidade são criados com o mesmo identificador.
-
-##### Autenticação
-
-- O login é realizado por email e senha no fluxo próprio de clientes.
-- O usuário deve possuir um perfil de cliente e o papel `Cliente`.
-- A resposta contém o identificador do cliente e o token JWT.
-
-##### Consulta
-
-- A listagem retorna somente o cliente associado ao usuário autenticado.
-- A consulta por identificador retorna apenas o próprio perfil.
-- A tentativa de consultar outro cliente retorna `404 Not Found`, sem revelar a existência do registro.
-
-#### Endpoints
+### Endpoints
 
 | Método | Rota                        | Acesso  | Descrição                         |
 | ------ | --------------------------- | ------- | --------------------------------- |
 | `POST` | `/api/clientes/cadastro`    | Público | Cadastra e autentica um cliente.  |
 | `POST` | `/api/clientes/login`       | Público | Autentica um cliente.             |
-| `GET`  | `/api/clientes`             | Cliente | Lista o próprio perfil.           |
-| `GET`  | `/api/clientes/{clienteId}` | Cliente | Consulta o próprio perfil por ID. |
+| `GET`  | `/api/clientes/{clienteId}` | Cliente | Consulta um cliente pelo seu ID.  |
 
-### 3. Módulo de estabelecimentos
+Os demais endpoints ficam protegidos por uma política global que exige autenticação. Rotas públicas precisam ser marcadas explicitamente com `AllowAnonymous`.
 
-#### Entidade `Estabelecimento`
+Exemplo de cadastro:
 
-| Propriedade         | Descrição                                         |
-| ------------------- | ------------------------------------------------- |
-| `ID`                | Identificador do estabelecimento.                 |
-| `UsuarioId`         | Identificador único da identidade associada.      |
-| `NomeComercial`     | Nome utilizado comercialmente.                    |
-| `Documento`         | CPF ou CNPJ normalizado.                          |
-| `Endereco`          | Endereço do estabelecimento.                      |
-| `Telefone`          | Telefone normalizado para contato.                |
-| `HorarioAbertura`   | Início do período diário de atendimento.          |
-| `HorarioFechamento` | Final do período diário de atendimento.           |
-| `AreaAtendimento`   | Descrição das regiões atendidas.                  |
-| `Ativo`             | Indica se o estabelecimento aceita novos pedidos. |
+```json
+{
+  "nome": "Cliente Exemplo",
+  "cpf": "12345678901",
+  "email": "cliente@example.com",
+  "senha": "senha@123"
+}
+```
 
-#### Regras de negócio
+O cadastro responde com `201 Created`; o login, com `200 OK`. Ambos retornam o mesmo formato:
 
-##### Cadastro
+```json
+{
+  "clienteId": "01900000-0000-7000-8000-000000000000",
+  "accessToken": "token-jwt",
+  "dataExpiracaoEmUtc": "2026-09-01T13:00:00Z"
+}
+```
 
-- O nome comercial deve possuir entre 2 e 100 caracteres.
-- O documento deve possuir 11 ou 14 dígitos.
-- O endereço deve possuir entre 5 e 250 caracteres.
-- O telefone deve possuir 10 ou 11 dígitos.
-- A área de atendimento deve possuir entre 2 e 150 caracteres.
-- O horário de abertura deve ser diferente do horário de fechamento.
-- Documento e telefone são normalizados antes da validação.
-- Não é permitido manter dois estabelecimentos ativos com o mesmo documento.
-- Cada usuário pode estar vinculado a apenas um estabelecimento.
-- Novos estabelecimentos são cadastrados como ativos.
+Erros HTTP seguem o formato Problem Details e incluem o `traceId` quando tratados pelo pipeline global.
 
-##### Autenticação
+### Entidade `Estabelecimento`
 
-- O login é realizado por email e senha no fluxo próprio de estabelecimentos.
-- O usuário deve possuir o papel `Estabelecimento`.
-- A resposta contém o identificador do estabelecimento e o token JWT.
+| Propriedade         | Descrição                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| `Id`                | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1.          |
+| `NomeComercial`     | Nome utilizado comercialmente.                                                       |
+| `Documento`         | CPF ou CNPJ do estabelecimento.                                                       |
+| `Endereco`          | Endereço do estabelecimento.                                                          |
+| `Telefone`          | Telefone para contato.                                                                |
+| `HorarioAbertura`   | Início do período diário de atendimento.                                              |
+| `HorarioFechamento` | Final do período diário de atendimento.                                               |
+| `AreaAtendimento`   | Descrição das regiões atendidas.                                                      |
+| `Ativo`             | Indica se o estabelecimento está disponível para receber novos pedidos.               |
 
-##### Edição
-
-- Somente o usuário vinculado pode editar o estabelecimento.
-- As mesmas validações do cadastro são aplicadas durante a edição.
-- A edição não pode gerar duplicidade de documento entre estabelecimentos ativos.
-
-##### Ativação e desativação
-
-- Somente o usuário vinculado pode alterar o status do estabelecimento.
-- Um estabelecimento inativo não aparece entre os disponíveis para pedidos.
-- Um estabelecimento não pode ser ativado quando outro registro ativo utiliza o mesmo documento.
-
-##### Disponibilidade
-
-- Um estabelecimento está disponível quando está ativo e o horário atual está dentro do período de atendimento.
-- Horários que atravessam a meia-noite são suportados.
-- A avaliação dos horários utiliza UTC.
-- Clientes consultam somente estabelecimentos disponíveis.
-- O proprietário pode consultar o próprio estabelecimento mesmo quando estiver fechado ou inativo.
-
-#### Endpoints
+### Endpoints de estabelecimentos
 
 | Método  | Rota                                                  | Acesso                     | Descrição                                |
 | ------- | ----------------------------------------------------- | -------------------------- | ---------------------------------------- |
@@ -151,98 +88,111 @@ A autenticação utiliza ASP.NET Core Identity e separa os acessos conforme o ti
 | `POST`  | `/api/estabelecimentos/login`                         | Público                    | Autentica um estabelecimento.            |
 | `GET`   | `/api/estabelecimentos`                               | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
 | `GET`   | `/api/estabelecimentos/disponiveis`                   | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
-| `GET`   | `/api/estabelecimentos/{estabelecimentoId}`           | Cliente ou Estabelecimento | Consulta um estabelecimento acessível.   |
+| `GET`   | `/api/estabelecimentos/{estabelecimentoId}`           | Cliente ou Estabelecimento | Consulta um estabelecimento.             |
 | `PUT`   | `/api/estabelecimentos/{estabelecimentoId}`           | Estabelecimento            | Edita o estabelecimento vinculado.       |
 | `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/ativar`    | Estabelecimento            | Ativa o estabelecimento vinculado.       |
 | `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/desativar` | Estabelecimento            | Desativa o estabelecimento vinculado.    |
 
 ## Arquitetura
 
-A solução está organizada em camadas:
+A solução está dividida em quatro projetos:
 
-| Projeto                      | Responsabilidade                                      |
-| ---------------------------- | ----------------------------------------------------- |
-| `DeliveryApp.Dominio`        | Entidades, validações e regras de domínio.            |
-| `DeliveryApp.Aplicacao`      | Casos de uso e handlers MediatR.                      |
-| `DeliveryApp.Infraestrutura` | Entity Framework Core, Identity e acesso aos dados.   |
-| `DeliveryApp.WebApi`         | Endpoints HTTP, autenticação, Swagger e configuração. |
-| `DeliveryApp.Tests`          | Testes unitários e de integração da API.              |
+| Projeto                      | Responsabilidade                                                          |
+| ---------------------------- | ------------------------------------------------------------------------- |
+| `DeliveryApp.Dominio`        | Entidades, contratos compartilhados e validações de domínio.              |
+| `DeliveryApp.Aplicacao`      | Serviços de aplicação e tipos compartilhados de resultado.                |
+| `DeliveryApp.Infraestrutura` | EF Core, ASP.NET Core Identity, migrations e acesso ao PostgreSQL.         |
+| `DeliveryApp.WebApi`         | Controllers, autenticação JWT, Problem Details, OpenAPI e observabilidade. |
 
-As respostas de erro seguem o padrão [Problem Details](https://www.rfc-editor.org/rfc/rfc9457), incluindo um identificador de rastreamento.
+O `DeliveryAppDbContext` herda de `IdentityDbContext` e mantém os dados de identidade e de domínio no mesmo banco. As entidades de perfil seguem o padrão de chave primária compartilhada com o Identity:
+
+| Entidade          | Modelagem da identidade                                                               |
+| ----------------- | ------------------------------------------------------------------------------------- |
+| `Cliente`         | O `Id` é a chave primária e também a chave estrangeira do usuário, em uma relação 1:1. |
+| `Estabelecimento` | O `Id` é a chave primária e também a chave estrangeira do usuário, em uma relação 1:1. |
+
+Assim, `Estabelecimento` não possui um `UsuarioId` separado: seu próprio `Id` identifica tanto o perfil de domínio quanto o usuário correspondente.
 
 ## Tecnologias
 
-- .NET 10;
-- ASP.NET Core Web API;
+- .NET 10 e ASP.NET Core Web API;
 - ASP.NET Core Identity;
-- Entity Framework Core;
-- SQL Server;
-- MediatR;
+- autenticação JWT Bearer;
+- Entity Framework Core 10;
+- PostgreSQL com Npgsql;
 - FluentResults;
-- JWT Bearer Authentication;
-- Serilog;
-- New Relic Logs;
-- Swagger/OpenAPI;
-- xUnit.
+- Serilog com saídas para console e arquivo;
+- Swagger/OpenAPI.
 
-## Como utilizar
+## Pré-requisitos
 
-1. Clone o repositório ou baixe o código-fonte.
-2. Abra o terminal ou o prompt de comando e navegue até a pasta raiz da solução.
-3. Restaure as dependências:
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0);
+- PostgreSQL;
+- [EF Core CLI](https://learn.microsoft.com/ef/core/cli/dotnet), somente para gerenciar migrations manualmente.
 
-   ```bash
-   dotnet restore
-   ```
-
-4. Configure os dados sensíveis com o Secret Manager:
-
-   ```bash
-   dotnet user-secrets set "ConnectionStrings:SqlServerEF" "Server=localhost;Database=DeliveryApp;Trusted_Connection=True;TrustServerCertificate=True" --project src/Api
-   dotnet user-secrets set "Jwt:Key" "informe-uma-chave-segura-com-pelo-menos-32-caracteres" --project src/Api
-   dotnet user-secrets set "LuckyPenny:LicenseKey" "informe-a-chave-de-licenca-do-mediatr" --project src/Api
-   ```
-
-5. Execute a API:
-
-   ```bash
-   dotnet run --project src/Api
-   ```
-
-No ambiente de desenvolvimento, as migrations são aplicadas automaticamente durante a inicialização. A documentação Swagger fica disponível em `https://localhost:7193/swagger` ou `http://localhost:5164/swagger`.
-
-### New Relic
-
-A integração com o New Relic fica desabilitada em desenvolvimento. Para habilitá-la, configure:
+Para instalar a CLI do EF Core:
 
 ```bash
-dotnet user-secrets set "NewRelic:Enabled" "true" --project src/Api
-dotnet user-secrets set "NewRelic:LicenseKey" "informe-a-chave-do-new-relic" --project src/Api
+dotnet tool install --global dotnet-ef
 ```
 
-Os erros também são registrados diariamente no diretório local de dados da aplicação, dentro da pasta `DeliveryApp`.
+## Configuração
 
-## Banco de dados
+Em desenvolvimento, o projeto já define em `src/Api/appsettings.Development.json` a conexão local:
 
-Para criar ou atualizar o banco manualmente, execute:
+```text
+Host=localhost;Port=5432;Database=DeliveryAppDb;Username=postgres;Password=postgres
+```
+
+Altere-a conforme o seu ambiente ou sobrescreva-a com o Secret Manager:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:PostgresEF" "Host=localhost;Port=5432;Database=DeliveryAppDb;Username=postgres;Password=sua-senha" --project src/Api
+```
+
+A chave de assinatura do JWT não é armazenada no repositório e precisa ser configurada:
+
+```bash
+dotnet user-secrets set "Jwt:Key" "informe-uma-chave-segura-com-pelo-menos-32-caracteres" --project src/Api
+```
+
+As demais opções do JWT ficam em `src/Api/appsettings.json`:
+
+| Chave                    | Valor padrão          |
+| ------------------------ | --------------------- |
+| `Jwt:Issuer`             | `delivery-app-api`    |
+| `Jwt:Audience`           | `delivery-app-client` |
+| `Jwt:AccessTokenMinutes` | `60`                  |
+
+## Execução
+
+Na raiz da solução, execute:
+
+```bash
+dotnet restore DeliveryApp.slnx
+dotnet run --project src/Api
+```
+
+No ambiente `Development`, as migrations são aplicadas automaticamente na inicialização. A API fica disponível em:
+
+- `https://localhost:7094`;
+- `http://localhost:5033`;
+- Swagger UI em `/swagger`.
+
+Para atualizar o banco manualmente:
 
 ```bash
 dotnet ef database update --project src/Infraestrutura --startup-project src/Api
 ```
 
-## Testes
+## Logs
 
-Execute todos os testes a partir da raiz da solução:
+O Serilog registra eventos no console e grava erros em arquivos diários. Os arquivos ficam em `DeliveryApp/erro*.log` dentro do diretório local de dados da aplicação (`LocalApplicationData`).
+
+## Verificação
+
+Para validar a compilação da solução:
 
 ```bash
-dotnet test DeliveryApp.slnx
+dotnet build DeliveryApp.slnx
 ```
-
-Os testes de integração utilizam o provedor InMemory do Entity Framework Core e não dependem de uma instância externa do SQL Server.
-
-## Requisitos
-
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0);
-- SQL Server;
-- [EF Core CLI](https://learn.microsoft.com/ef/core/cli/dotnet), para gerenciamento manual das migrations;
-- chave de licença válida do MediatR.
