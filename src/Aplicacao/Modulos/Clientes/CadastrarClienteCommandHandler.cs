@@ -45,7 +45,7 @@ public sealed class CadastrarClienteCommandHandler(
             );
         }
 
-        await repositorioCliente.CadastrarAsync(cliente);
+        await repositorioCliente.CadastrarAsync(cliente, cancellationToken);
 
         return Result.Ok();
     }
