@@ -4,5 +4,7 @@ public enum TipoErro
 {
     Validacao,
     NaoEncontrado,
-    Conflito
+    Conflito,
+    NaoAutenticado,
+    NaoAutorizado,
 }

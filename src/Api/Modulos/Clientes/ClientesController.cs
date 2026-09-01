@@ -1,8 +1,10 @@
+using DeliveryApp.Aplicacao.Modulos.Clientes;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using DeliveryApp.Infraestrutura.Orm;
 using DeliveryApp.WebApi.Compartilhado;
 using DeliveryApp.WebApi.Compartilhado.Auth;
+using DeliveryApp.WebApi.Compartilhado.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +19,32 @@ public sealed class ClientesController(
     UserManager<IdentityUser<Guid>> userManager,
     SignInManager<IdentityUser<Guid>> signInManager,
     RoleManager<IdentityRole<Guid>> roleManager,
-    JwtProvider jwtProvider
+    JwtProvider jwtProvider,
+    ObterClientePorIdHandler obterClientePorId
 ) : ControllerBase
 {
+
+    [Authorize(Roles = nameof(TipoUsuario.Cliente))]
+    [HttpGet("{clienteId:guid}")]
+    public async Task<ActionResult<ClienteResponse>> ObterPorId(
+        Guid clienteId
+    )
+    {
+        var resultado = await obterClientePorId.Handle(clienteId);
+
+        if (resultado.IsFailed)
+            return this.ProblemDetails(resultado);
+
+        var response = new ClienteResponse(
+            resultado.Value.Id,
+            resultado.Value.Nome,
+            resultado.Value.Cpf,
+            resultado.Value.Email
+        );
+
+        return Ok(response);
+    }
+
     [AllowAnonymous]
     [HttpPost("cadastro")]
     public async Task<ActionResult<AutenticacaoClienteResponse>> Cadastrar(
