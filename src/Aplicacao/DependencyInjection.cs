@@ -1,4 +1,3 @@
-using DeliveryApp.Aplicacao.Modulos.Clientes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DeliveryApp.Aplicacao;

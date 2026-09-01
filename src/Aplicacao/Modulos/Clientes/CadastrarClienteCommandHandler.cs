@@ -1,4 +1,5 @@
 using DeliveryApp.Aplicacao.Compartilhado;
+using DeliveryApp.Dominio.Compartilhado;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
 using MediatR;
@@ -26,10 +27,12 @@ public sealed class CadastrarClienteCommandHandler(
 
         if (erros.Count > 0)
         {
-            return Result.Fail(
-                new Error("Cliente inválido.")
-                    .WithMetadata(nameof(TipoErro), TipoErro.Validacao)
-            );
+            var resultado = Result.Ok();
+
+            foreach (ErroValidacao erro in erros)
+                resultado.WithError(TipoErro.Validacao.ObterMetadados(erro.Campo, erro.Mensagem));
+
+            return resultado;
         }
 
         var clientes = await repositorioCliente.SelecionarTodosAsync(cancellationToken);

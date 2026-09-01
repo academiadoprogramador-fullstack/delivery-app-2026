@@ -1,7 +1,5 @@
 using DeliveryApp.Aplicacao.Modulos.Clientes;
 using DeliveryApp.Dominio.Compartilhado.Auth;
-using DeliveryApp.Dominio.Modulos.Clientes;
-using DeliveryApp.Infraestrutura.Orm;
 using DeliveryApp.WebApi.Compartilhado;
 using DeliveryApp.WebApi.Compartilhado.Auth;
 using DeliveryApp.WebApi.Compartilhado.Http;
@@ -26,6 +24,7 @@ public sealed class ClientesController(
 
     [Authorize(Roles = nameof(TipoUsuario.Cliente))]
     [HttpGet("{clienteId:guid}")]
+    [ProducesResponseType<ClienteResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<ClienteResponse>> ObterPorId(
         Guid clienteId,
         CancellationToken cancellationToken
@@ -92,11 +91,14 @@ public sealed class ClientesController(
                 return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
             }
 
-            await mediator.Send(new CadastrarClienteCommand(
+            var resultadoCliente = await mediator.Send(new CadastrarClienteCommand(
                 id,
                 request.Nome,
                 request.Cpf
             ));
+
+            if (!resultadoCliente.IsSuccess)
+                return this.ProblemDetails(resultadoCliente);
 
             var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 
