@@ -20,7 +20,8 @@ public sealed class ClientesController(
     SignInManager<IdentityUser<Guid>> signInManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     JwtProvider jwtProvider,
-    ObterClientePorIdHandler obterClientePorId
+    ObterClientePorIdQueryHandler obterClientePorIdQueryHandler,
+    CadastrarClienteCommandHandler cadastrarClienteCommandHandler
 ) : ControllerBase
 {
 
@@ -30,7 +31,7 @@ public sealed class ClientesController(
         Guid clienteId
     )
     {
-        var resultado = await obterClientePorId.Handle(clienteId);
+        var resultado = await obterClientePorIdQueryHandler.Handle(new ObterClientePorIdQuery(clienteId));
 
         if (resultado.IsFailed)
             return this.ProblemDetails(resultado);
@@ -51,21 +52,11 @@ public sealed class ClientesController(
         CadastrarClienteRequest request
     )
     {
-        var cliente = new Cliente(Guid.CreateVersion7(), request.Nome, request.Cpf);
-
-        var erros = cliente.Validar();
-
-        if (erros.Count > 0)
-            return this.ErroDeValidacao(erros);
-
-        if (await dbContext.Clientes.AnyAsync(registro => registro.Cpf == cliente.Cpf))
-        {
-            return this.Conflito("Já existe um cliente cadastrado com este CPF.");
-        }
+        var id = Guid.CreateVersion7();
 
         var usuario = new IdentityUser<Guid>
         {
-            Id = cliente.Id,
+            Id = id,
             Email = request.Email.Trim(),
             UserName = request.Email.Trim()
         };
@@ -101,9 +92,11 @@ public sealed class ClientesController(
                 return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
             }
 
-            dbContext.Clientes.Add(cliente);
-
-            await dbContext.SaveChangesAsync();
+            await cadastrarClienteCommandHandler.Handle(new CadastrarClienteCommand(
+                id,
+                request.Nome,
+                request.Cpf
+            ));
 
             var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 

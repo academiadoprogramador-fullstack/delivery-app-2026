@@ -9,6 +9,7 @@ public static class DependencyInjection
         this IServiceCollection services
     )
     {
-        services.AddScoped<ObterClientePorIdHandler>();
+        services.AddScoped<ObterClientePorIdQueryHandler>();
+        services.AddScoped<CadastrarClienteCommandHandler>();
     }
 }
