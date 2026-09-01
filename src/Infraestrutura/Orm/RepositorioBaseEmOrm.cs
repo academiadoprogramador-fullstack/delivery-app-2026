@@ -20,7 +20,7 @@ public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) wh
         CancellationToken cancellationToken = default
     )
     {
-        T? registroSelecionado = await SelecionarPorIdAsync(id);
+        T? registroSelecionado = await SelecionarPorIdAsync(id, cancellationToken);
 
         if (registroSelecionado == null)
             return false;
@@ -34,7 +34,7 @@ public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) wh
 
     public async Task<bool> ExcluirAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        T? TSelecionado = await SelecionarPorIdAsync(id);
+        T? TSelecionado = await SelecionarPorIdAsync(id, cancellationToken);
 
         if (TSelecionado == null)
             return false;

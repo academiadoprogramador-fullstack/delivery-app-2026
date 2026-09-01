@@ -5,6 +5,7 @@ using DeliveryApp.Infraestrutura.Orm;
 using DeliveryApp.WebApi.Compartilhado;
 using DeliveryApp.WebApi.Compartilhado.Auth;
 using DeliveryApp.WebApi.Compartilhado.Http;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,23 +16,22 @@ namespace DeliveryApp.WebApi.Modulos.Clientes;
 [ApiController]
 [Route("api/clientes")]
 public sealed class ClientesController(
-    DeliveryAppDbContext dbContext,
     UserManager<IdentityUser<Guid>> userManager,
     SignInManager<IdentityUser<Guid>> signInManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     JwtProvider jwtProvider,
-    ObterClientePorIdQueryHandler obterClientePorIdQueryHandler,
-    CadastrarClienteCommandHandler cadastrarClienteCommandHandler
+    IMediator mediator
 ) : ControllerBase
 {
 
     [Authorize(Roles = nameof(TipoUsuario.Cliente))]
     [HttpGet("{clienteId:guid}")]
     public async Task<ActionResult<ClienteResponse>> ObterPorId(
-        Guid clienteId
+        Guid clienteId,
+        CancellationToken cancellationToken
     )
     {
-        var resultado = await obterClientePorIdQueryHandler.Handle(new ObterClientePorIdQuery(clienteId));
+        var resultado = await mediator.Send(new ObterClientePorIdQuery(clienteId), cancellationToken);
 
         if (resultado.IsFailed)
             return this.ProblemDetails(resultado);
@@ -92,7 +92,7 @@ public sealed class ClientesController(
                 return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
             }
 
-            await cadastrarClienteCommandHandler.Handle(new CadastrarClienteCommand(
+            await mediator.Send(new CadastrarClienteCommand(
                 id,
                 request.Nome,
                 request.Cpf

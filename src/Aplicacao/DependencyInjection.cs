@@ -9,7 +9,9 @@ public static class DependencyInjection
         this IServiceCollection services
     )
     {
-        services.AddScoped<ObterClientePorIdQueryHandler>();
-        services.AddScoped<CadastrarClienteCommandHandler>();
+        services.AddMediatR(config =>
+        {
+            config.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+        });
     }
 }
