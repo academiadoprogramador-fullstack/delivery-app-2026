@@ -1,10 +1,8 @@
 using DeliveryApp.Aplicacao.Modulos.Clientes;
 using DeliveryApp.Dominio.Compartilhado.Auth;
-using DeliveryApp.WebApi.Compartilhado;
 using DeliveryApp.WebApi.Compartilhado.Http;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeliveryApp.WebApi.Modulos.Clientes;
@@ -12,9 +10,6 @@ namespace DeliveryApp.WebApi.Modulos.Clientes;
 [ApiController]
 [Route("api/clientes")]
 public sealed class ClientesController(
-    UserManager<IdentityUser<Guid>> userManager,
-    SignInManager<IdentityUser<Guid>> signInManager,
-    IEmissorDeTokens emissorDeTokens,
     IMediator mediator
 ) : ControllerBase
 {
@@ -72,29 +67,24 @@ public sealed class ClientesController(
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<ActionResult<AutenticacaoClienteResponse>> Autenticar(
-        AutenticarClienteRequest request
+        AutenticarClienteRequest request,
+        CancellationToken cancellationToken
     )
     {
-        var usuario = await userManager.FindByEmailAsync(request.Email.Trim());
+        var resultado = await mediator.Send(new AutenticarClienteCommand(
+            request.Email,
+            request.Senha
+        ), cancellationToken);
 
-        if (usuario is null)
-            return this.CredenciaisInvalidas();
+        if (!resultado.IsSuccess)
+            return this.ProblemDetails(resultado);
 
-        var resultadoAutenticacao = await signInManager.CheckPasswordSignInAsync(
-            usuario,
-            request.Senha,
-            lockoutOnFailure: true
-        );
-
-        if (!resultadoAutenticacao.Succeeded)
-            return this.CredenciaisInvalidas();
-
-        var accessToken = emissorDeTokens.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
+        var accessTokenDoUsuario = resultado.Value;
 
         return Ok(new AutenticacaoClienteResponse(
-            usuario.Id,
-            accessToken.Token,
-            accessToken.DataExpiracaoEmUtc
+            accessTokenDoUsuario.UsuarioId,
+            accessTokenDoUsuario.Token,
+            accessTokenDoUsuario.DataExpiracaoEmUtc
         ));
     }
 }

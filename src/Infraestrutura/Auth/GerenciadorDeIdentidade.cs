@@ -7,7 +7,7 @@ public sealed class GerenciadorDeIdentidade(
     UserManager<IdentityUser<Guid>> userManager
 ) : IGerenciadorDeIdentidade
 {
-    public async Task<UsuarioCadastrado> CadastrarAsync(
+    public async Task<UsuarioDto> CadastrarAsync(
         Guid usuarioId,
         string email,
         string senha,
@@ -34,7 +34,7 @@ public sealed class GerenciadorDeIdentidade(
             throw CriarErro(resultadoPapel);
         }
 
-        return new UsuarioCadastrado(usuario.Id, usuario.Email);
+        return new UsuarioDto(usuario.Id, usuario.Email);
     }
 
     public async Task ExcluirAsync(Guid usuarioId)
@@ -43,6 +43,16 @@ public sealed class GerenciadorDeIdentidade(
 
         if (usuario is not null)
             await userManager.DeleteAsync(usuario);
+    }
+
+    public async Task<UsuarioDto?> ChecarValidadeDeSenhaAsync(string email, string senha)
+    {
+        var usuario = await userManager.FindByEmailAsync(email);
+
+        if (usuario is null || !await userManager.CheckPasswordAsync(usuario, senha))
+            return null;
+
+        return new UsuarioDto(usuario.Id, usuario.Email!);
     }
 
     private static Exception CriarErro(IdentityResult resultado)

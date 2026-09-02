@@ -55,7 +55,7 @@ public sealed class CadastrarClienteCommandHandler(
 
         try
         {
-            UsuarioCadastrado usuario = await gerenciadorDeIdentidade.CadastrarAsync(
+            UsuarioDto usuario = await gerenciadorDeIdentidade.CadastrarAsync(
                 cliente.Id,
                 command.Email,
                 command.Senha,
