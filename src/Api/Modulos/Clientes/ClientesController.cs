@@ -48,7 +48,8 @@ public sealed class ClientesController(
     [AllowAnonymous]
     [HttpPost("cadastro")]
     public async Task<ActionResult<AutenticacaoClienteResponse>> Cadastrar(
-        CadastrarClienteRequest request
+        CadastrarClienteRequest request,
+        CancellationToken cancellationToken
     )
     {
         var id = Guid.CreateVersion7();
@@ -95,7 +96,7 @@ public sealed class ClientesController(
                 id,
                 request.Nome,
                 request.Cpf
-            ));
+            ), cancellationToken);
 
             if (!resultadoCliente.IsSuccess)
                 return this.ProblemDetails(resultadoCliente);

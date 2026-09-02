@@ -11,7 +11,6 @@ public enum TipoErro
     NaoAutorizado,
 }
 
-
 public static class TipoErroExtensions
 {
     public static Error ObterMetadados(this TipoErro tipo, string campo, string mensagem)

@@ -1,4 +1,5 @@
 using DeliveryApp.Aplicacao.Compartilhado;
+using DeliveryApp.Aplicacao.Modulos.Clientes.DTOs;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
@@ -29,10 +30,12 @@ public sealed class ObterClientePorIdQueryHandler(
         var cliente = await repositorioCliente.SelecionarPorIdAsync(query.ClienteId, cancellationToken);
 
         if (cliente is null)
+        {
             return Result.Fail<ClienteDto>(
                 new Error("O cliente com este ID não foi encontrado.")
                     .WithMetadata(nameof(TipoErro), TipoErro.NaoEncontrado)
             );
+        }
 
         return Result.Ok(new ClienteDto(
             cliente.Id,
