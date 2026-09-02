@@ -16,8 +16,7 @@ namespace DeliveryApp.WebApi.Modulos.Clientes;
 public sealed class ClientesController(
     UserManager<IdentityUser<Guid>> userManager,
     SignInManager<IdentityUser<Guid>> signInManager,
-    RoleManager<IdentityRole<Guid>> roleManager,
-    JwtProvider jwtProvider,
+    IEmissorDeTokens emissorDeTokens,
     IMediator mediator
 ) : ControllerBase
 {
@@ -47,7 +46,7 @@ public sealed class ClientesController(
 
     [AllowAnonymous]
     [HttpPost("cadastro")]
-    public async Task<ActionResult<AutenticacaoClienteResponse>> Cadastrar(
+    public async Task<ActionResult<CadastrarClienteResponse>> Cadastrar(
         CadastrarClienteRequest request,
         CancellationToken cancellationToken
     )
@@ -88,12 +87,9 @@ public sealed class ClientesController(
             if (!resultadoCliente.IsSuccess)
                 return this.ProblemDetails(resultadoCliente);
 
-            var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
-
-            return Created(string.Empty, new AutenticacaoClienteResponse(
+            return Created(string.Empty, new CadastrarClienteResponse(
                 usuario.Id,
-                jwt.AccessToken,
-                jwt.DataExpiracaoEmUtc
+                request.Nome
             ));
         }
         catch (DbUpdateException)
@@ -126,12 +122,12 @@ public sealed class ClientesController(
         if (!resultadoAutenticacao.Succeeded)
             return this.CredenciaisInvalidas();
 
-        var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
+        var accessToken = emissorDeTokens.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 
         return Ok(new AutenticacaoClienteResponse(
             usuario.Id,
-            jwt.AccessToken,
-            jwt.DataExpiracaoEmUtc
+            accessToken.Token,
+            accessToken.DataExpiracaoEmUtc
         ));
     }
 }
