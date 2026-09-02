@@ -70,19 +70,6 @@ public sealed class ClientesController(
 
             var tipoUsuario = TipoUsuario.Cliente.ToString();
 
-            var resultadoPapel = await roleManager.FindByNameAsync(tipoUsuario);
-
-            if (resultadoPapel is null)
-            {
-                await roleManager.CreateAsync(new IdentityRole<Guid>
-                {
-                    Id = new Guid("01a058f4-a048-79a3-b1a6-0f01d629a126"),
-                    Name = TipoUsuario.Cliente.ToString(),
-                    NormalizedName = TipoUsuario.Cliente.ToString().ToUpperInvariant(),
-                    ConcurrencyStamp = "01a058f7-9492-73bc-8e4b-934c53594ed6"
-                });
-            }
-
             var resultadoInclusaoPapel = await userManager.AddToRoleAsync(usuario, tipoUsuario);
 
             if (!resultadoInclusaoPapel.Succeeded)
