@@ -22,23 +22,25 @@ public sealed class ClientesController(
         CancellationToken cancellationToken
     )
     {
-        var resultado = await mediator.Send(new ObterClientePorIdQuery(clienteId), cancellationToken);
+        var resultado = await mediator.Send(
+            new ObterClientePorIdQuery(clienteId),
+            cancellationToken
+        );
 
         if (resultado.IsFailed)
             return this.ProblemDetails(resultado);
 
-        var response = new ClienteResponse(
+        return Ok(new ClienteResponse(
             resultado.Value.Id,
             resultado.Value.Nome,
             resultado.Value.Cpf,
             resultado.Value.Email
-        );
-
-        return Ok(response);
+        ));
     }
 
     [AllowAnonymous]
     [HttpPost("cadastro")]
+    [ProducesResponseType<CadastrarClienteResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<CadastrarClienteResponse>> Cadastrar(
         CadastrarClienteRequest request,
         CancellationToken cancellationToken
@@ -66,7 +68,8 @@ public sealed class ClientesController(
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<AutenticacaoClienteResponse>> Autenticar(
+    [ProducesResponseType<AutenticarClienteResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<AutenticarClienteResponse>> Autenticar(
         AutenticarClienteRequest request,
         CancellationToken cancellationToken
     )
@@ -81,7 +84,7 @@ public sealed class ClientesController(
 
         var accessTokenDoUsuario = resultado.Value;
 
-        return Ok(new AutenticacaoClienteResponse(
+        return Ok(new AutenticarClienteResponse(
             accessTokenDoUsuario.UsuarioId,
             accessTokenDoUsuario.Token,
             accessTokenDoUsuario.DataExpiracaoEmUtc
