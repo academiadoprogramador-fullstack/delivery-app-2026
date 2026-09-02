@@ -16,6 +16,7 @@ namespace DeliveryApp.WebApi.Modulos.Clientes;
 public sealed class ClientesController(
     UserManager<IdentityUser<Guid>> userManager,
     SignInManager<IdentityUser<Guid>> signInManager,
+    IGerenciadorDeIdentidade gerenciadorDeIdentidade,
     IEmissorDeTokens emissorDeTokens,
     IMediator mediator
 ) : ControllerBase
@@ -51,55 +52,24 @@ public sealed class ClientesController(
         CancellationToken cancellationToken
     )
     {
-        var id = Guid.CreateVersion7();
+        var resultado = await mediator.Send(new CadastrarClienteCommand(
+            request.Nome,
+            request.Cpf,
+            request.Email,
+            request.Senha
+        ), cancellationToken);
 
-        var usuario = new IdentityUser<Guid>
-        {
-            Id = id,
-            Email = request.Email.Trim(),
-            UserName = request.Email.Trim()
-        };
+        if (!resultado.IsSuccess)
+            return this.ProblemDetails(resultado);
 
-        try
-        {
-            var resultadoUsuario = await userManager.CreateAsync(usuario, request.Senha);
-
-            if (!resultadoUsuario.Succeeded)
-                return this.ErrosDeCriacaoUsuario(resultadoUsuario);
-
-            var tipoUsuario = TipoUsuario.Cliente.ToString();
-
-            var resultadoInclusaoPapel = await userManager.AddToRoleAsync(usuario, tipoUsuario);
-
-            if (!resultadoInclusaoPapel.Succeeded)
-            {
-                await userManager.DeleteAsync(usuario);
-
-                return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
-            }
-
-            var resultadoCliente = await mediator.Send(new CadastrarClienteCommand(
-                id,
-                request.Nome,
-                request.Cpf
-            ), cancellationToken);
-
-            if (!resultadoCliente.IsSuccess)
-                return this.ProblemDetails(resultadoCliente);
-
-            return Created(string.Empty, new CadastrarClienteResponse(
-                usuario.Id,
+        return CreatedAtAction(
+            nameof(ObterPorId),
+            new { clienteId = resultado.Value },
+            new CadastrarClienteResponse(
+                resultado.Value,
                 request.Nome
-            ));
-        }
-        catch (DbUpdateException)
-        {
-            await userManager.DeleteAsync(usuario);
-
-            return this.Conflito(
-                "Já existe um cliente cadastrado com este email ou CPF."
-            );
-        }
+            )
+        );
     }
 
     [AllowAnonymous]
