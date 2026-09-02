@@ -7,7 +7,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApp.WebApi.Modulos.Clientes;
 
@@ -16,8 +15,7 @@ namespace DeliveryApp.WebApi.Modulos.Clientes;
 public sealed class ClientesController(
     UserManager<IdentityUser<Guid>> userManager,
     SignInManager<IdentityUser<Guid>> signInManager,
-    RoleManager<IdentityRole<Guid>> roleManager,
-    JwtProvider jwtProvider,
+    IEmissorDeToken emissorTokens,
     IMediator mediator
 ) : ControllerBase
 {
@@ -47,80 +45,35 @@ public sealed class ClientesController(
 
     [AllowAnonymous]
     [HttpPost("cadastro")]
-    public async Task<ActionResult<AutenticacaoClienteResponse>> Cadastrar(
+    [ProducesResponseType<CadastrarClienteResponse>(StatusCodes.Status201Created)]
+    public async Task<ActionResult<CadastrarClienteResponse>> Cadastrar(
         CadastrarClienteRequest request,
         CancellationToken cancellationToken
     )
     {
-        var id = Guid.CreateVersion7();
+        var resultadoCliente = await mediator.Send(new CadastrarClienteCommand(
+            request.Nome,
+            request.Cpf,
+            request.Email,
+            request.Senha
+        ), cancellationToken);
 
-        var usuario = new IdentityUser<Guid>
-        {
-            Id = id,
-            Email = request.Email.Trim(),
-            UserName = request.Email.Trim()
-        };
+        if (!resultadoCliente.IsSuccess)
+            return this.ProblemDetails(resultadoCliente);
 
-        try
-        {
-            var resultadoUsuario = await userManager.CreateAsync(usuario, request.Senha);
-
-            if (!resultadoUsuario.Succeeded)
-                return this.ErrosDeCriacaoUsuario(resultadoUsuario);
-
-            var tipoUsuario = TipoUsuario.Cliente.ToString();
-
-            var resultadoPapel = await roleManager.FindByNameAsync(tipoUsuario);
-
-            if (resultadoPapel is null)
-            {
-                await roleManager.CreateAsync(new IdentityRole<Guid>
-                {
-                    Id = new Guid("01a058f4-a048-79a3-b1a6-0f01d629a126"),
-                    Name = TipoUsuario.Cliente.ToString(),
-                    NormalizedName = TipoUsuario.Cliente.ToString().ToUpperInvariant(),
-                    ConcurrencyStamp = "01a058f7-9492-73bc-8e4b-934c53594ed6"
-                });
-            }
-
-            var resultadoInclusaoPapel = await userManager.AddToRoleAsync(usuario, tipoUsuario);
-
-            if (!resultadoInclusaoPapel.Succeeded)
-            {
-                await userManager.DeleteAsync(usuario);
-
-                return this.ErrosDeCriacaoUsuario(resultadoInclusaoPapel);
-            }
-
-            var resultadoCliente = await mediator.Send(new CadastrarClienteCommand(
-                id,
-                request.Nome,
-                request.Cpf
-            ), cancellationToken);
-
-            if (!resultadoCliente.IsSuccess)
-                return this.ProblemDetails(resultadoCliente);
-
-            var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
-
-            return Created(string.Empty, new AutenticacaoClienteResponse(
-                usuario.Id,
-                jwt.AccessToken,
-                jwt.DataExpiracaoEmUtc
-            ));
-        }
-        catch (DbUpdateException)
-        {
-            await userManager.DeleteAsync(usuario);
-
-            return this.Conflito(
-                "Já existe um cliente cadastrado com este email ou CPF."
-            );
-        }
+        return CreatedAtAction(
+            nameof(ObterPorId),
+            new { clienteId = resultadoCliente.Value },
+            new CadastrarClienteResponse(
+                resultadoCliente.Value,
+                request.Nome
+            )
+        );
     }
 
     [AllowAnonymous]
     [HttpPost("login")]
+    [ProducesResponseType<AutenticacaoClienteResponse>(StatusCodes.Status200OK)]
     public async Task<ActionResult<AutenticacaoClienteResponse>> Autenticar(
         AutenticarClienteRequest request
     )
@@ -139,12 +92,12 @@ public sealed class ClientesController(
         if (!resultadoAutenticacao.Succeeded)
             return this.CredenciaisInvalidas();
 
-        var jwt = jwtProvider.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
+        var accessToken = emissorTokens.CriarToken(usuario.Id, usuario.Email!, TipoUsuario.Cliente);
 
         return Ok(new AutenticacaoClienteResponse(
             usuario.Id,
-            jwt.AccessToken,
-            jwt.DataExpiracaoEmUtc
+            accessToken.Token,
+            accessToken.DataExpiracaoEmUtc
         ));
     }
 }

@@ -12,7 +12,7 @@ public sealed class DeliveryAppDbContext(
 ) : IdentityDbContext<IdentityUser<Guid>, IdentityRole<Guid>, Guid>(options)
 {
 
-    private static readonly Guid TipoUsuarioClienteId = new("01a058f4-a048-79a3-b1a6-0f01d629a126");
+    private static readonly Guid tipoUsuarioClienteId = new("01a058f4-a048-79a3-b1a6-0f01d629a126");
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
 
@@ -23,13 +23,13 @@ public sealed class DeliveryAppDbContext(
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(DeliveryAppDbContext).Assembly);
 
         // Criando o cargo CLIENTE no banco de dados
-        // modelBuilder.Entity<IdentityUser<Guid>>().HasData(new IdentityRole<Guid>
-        // {
-        //     Id = TipoUsuarioClienteId,
-        //     Name = TipoUsuario.Cliente.ToString(),
-        //     NormalizedName = TipoUsuario.Cliente.ToString().ToUpperInvariant(),
-        //     ConcurrencyStamp = "01a058f7-9492-73bc-8e4b-934c53594ed6"
-        // });
+        modelBuilder.Entity<IdentityRole<Guid>>().HasData(new IdentityRole<Guid>
+        {
+            Id = tipoUsuarioClienteId,
+            Name = TipoUsuario.Cliente.ToString(),
+            NormalizedName = TipoUsuario.Cliente.ToString().ToUpperInvariant(),
+            ConcurrencyStamp = "01a058f7-9492-73bc-8e4b-934c53594ed6"
+        });
 
         if (provedorDeUsuario is not null)
         {

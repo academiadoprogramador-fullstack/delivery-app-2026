@@ -1,24 +1,30 @@
-using DeliveryApp.Aplicacao.Compartilhado;
-using DeliveryApp.Dominio.Compartilhado;
+using System.Data.Common;
+using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
 using MediatR;
 
 namespace DeliveryApp.Aplicacao.Modulos.Clientes;
 
-public sealed record CadastrarClienteCommand(Guid Id, string Nome, string Cpf) : IRequest<Result>;
+public sealed record CadastrarClienteCommand(
+    string Nome,
+    string Cpf,
+    string Email,
+    string Senha
+) : IRequest<Result<Guid>>;
 
 public sealed class CadastrarClienteCommandHandler(
-    IRepositorioCliente repositorioCliente
-) : IRequestHandler<CadastrarClienteCommand, Result>
+    IRepositorioCliente repositorio,
+    IGerenciadorDeIdentidade gerenciadorDeIdentidade
+) : IRequestHandler<CadastrarClienteCommand, Result<Guid>>
 {
-    public async Task<Result> Handle(
+    public async Task<Result<Guid>> Handle(
         CadastrarClienteCommand command,
         CancellationToken cancellationToken = default
     )
     {
-        var cliente = new Cliente(
-            command.Id,
+        Cliente cliente = new(
+            Guid.CreateVersion7(),
             command.Nome,
             command.Cpf
         );
@@ -26,27 +32,43 @@ public sealed class CadastrarClienteCommandHandler(
         var erros = cliente.Validar();
 
         if (erros.Count > 0)
-        {
-            var resultado = Result.Ok();
+            return Result.Fail(ErrosDeCliente.Validacao(erros));
 
-            foreach (ErroValidacao erro in erros)
-                resultado.WithError(TipoErro.Validacao.ObterMetadados(erro.Campo, erro.Mensagem));
-
-            return resultado;
-        }
-
-        var clientes = await repositorioCliente.SelecionarTodosAsync(cancellationToken);
+        var clientes = await repositorio.SelecionarTodosAsync(cancellationToken);
 
         if (clientes.Any(registro => registro.Cpf == cliente.Cpf))
+            return Result.Fail(ErrosDeCliente.CpfDuplicado());
+
+        try
+        {
+            UsuarioCadastrado usuario = await gerenciadorDeIdentidade.CadastrarAsync(
+                cliente.Id,
+                command.Email,
+                command.Senha,
+                TipoUsuario.Cliente
+            );
+
+            await repositorio.CadastrarAsync(cliente, cancellationToken);
+
+            return Result.Ok(cliente.Id);
+        }
+        catch (ConflitoDeIdentidadeException excecao)
         {
             return Result.Fail(
-                new Error("Um cliente com este CPF já foi cadastrado.")
-                    .WithMetadata(nameof(TipoErro), TipoErro.Conflito)
+                ErrosDeCliente.ConflitoDeIdentidade(excecao.Message)
             );
         }
+        catch (ValidacaoDeIdentidadeException excecao)
+        {
+            return Result.Fail(
+                ErrosDeCliente.ValidacaoDeIdentidade(excecao.Campo, excecao.Message)
+            );
+        }
+        catch (DbException)
+        {
+            await gerenciadorDeIdentidade.ExcluirAsync(cliente.Id);
 
-        await repositorioCliente.CadastrarAsync(cliente, cancellationToken);
-
-        return Result.Ok();
+            return Result.Fail(ErrosDeCliente.CadastroDuplicado());
+        }
     }
 }
