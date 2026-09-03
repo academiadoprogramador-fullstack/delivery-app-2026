@@ -31,10 +31,38 @@ public sealed class GerenciadorDeIdentidade(
         if (!resultadoPapel.Succeeded)
         {
             await userManager.DeleteAsync(usuario);
+
             throw CriarErro(resultadoPapel);
         }
 
         return new UsuarioDto(usuario.Id, usuario.Email);
+    }
+
+    public async Task<UsuarioDto?> ChecarValidadeDeSenhaAsync(
+        string email,
+        string senha,
+        TipoUsuario tipo
+    )
+    {
+        var usuario = await userManager.FindByEmailAsync(email);
+
+        if (usuario is null || await userManager.IsLockedOutAsync(usuario))
+            return null;
+
+        if (!await userManager.CheckPasswordAsync(usuario, senha))
+        {
+            await userManager.AccessFailedAsync(usuario);
+
+            return null;
+        }
+
+        if (!await userManager.IsInRoleAsync(usuario, tipo.ToString()))
+            return null;
+
+        if (usuario.AccessFailedCount > 0)
+            await userManager.ResetAccessFailedCountAsync(usuario);
+
+        return new UsuarioDto(usuario.Id, usuario.Email!);
     }
 
     public async Task ExcluirAsync(Guid usuarioId)
@@ -43,16 +71,6 @@ public sealed class GerenciadorDeIdentidade(
 
         if (usuario is not null)
             await userManager.DeleteAsync(usuario);
-    }
-
-    public async Task<UsuarioDto?> ChecarValidadeDeSenhaAsync(string email, string senha)
-    {
-        var usuario = await userManager.FindByEmailAsync(email);
-
-        if (usuario is null || !await userManager.CheckPasswordAsync(usuario, senha))
-            return null;
-
-        return new UsuarioDto(usuario.Id, usuario.Email!);
     }
 
     private static Exception CriarErro(IdentityResult resultado)

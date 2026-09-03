@@ -1,4 +1,4 @@
-using System.Data.Common;
+using DeliveryApp.Dominio.Compartilhado;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
@@ -34,9 +34,7 @@ public sealed class CadastrarClienteCommandHandler(
         if (erros.Count > 0)
             return Result.Fail(ErrosDeCliente.Validacao(erros));
 
-        var clientes = await repositorioCliente.SelecionarTodosAsync(cancellationToken);
-
-        if (clientes.Any(registro => registro.Cpf == cliente.Cpf))
+        if (await repositorioCliente.ExisteRegistroComCpfAsync(cliente.Cpf, cancellationToken))
             return Result.Fail(ErrosDeCliente.CpfDuplicado());
 
         try
@@ -60,7 +58,7 @@ public sealed class CadastrarClienteCommandHandler(
         {
             return Result.Fail(ErrosDeCliente.ConflitoDeIdentidade(excecao.Message));
         }
-        catch (DbException)
+        catch (ConflitoDePersistenciaException)
         {
             await gerenciadorDeIdentidade.ExcluirAsync(cliente.Id);
 
