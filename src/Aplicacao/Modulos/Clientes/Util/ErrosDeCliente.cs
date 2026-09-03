@@ -2,7 +2,7 @@ using DeliveryApp.Aplicacao.Compartilhado;
 using DeliveryApp.Dominio.Compartilhado;
 using FluentResults;
 
-namespace DeliveryApp.Aplicacao.Modulos.Clientes;
+namespace DeliveryApp.Aplicacao.Modulos.Clientes.Util;
 
 public static class ErrosDeCliente
 {
