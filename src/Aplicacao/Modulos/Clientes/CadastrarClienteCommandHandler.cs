@@ -50,13 +50,13 @@ public sealed class CadastrarClienteCommandHandler(
 
             return Result.Ok(cliente.Id);
         }
-        catch (ValidacaoDeIdentidadeException excecao)
+        catch (ValidacaoDeIdentidadeException ex)
         {
-            return Result.Fail(ErrosDeCliente.ValidacaoDeIdentidade(excecao.Campo, excecao.Message));
+            return Result.Fail(ErrosDeCliente.ValidacaoDeIdentidade(ex.Campo, ex.Message));
         }
-        catch (ConflitoDeIdentidadeException excecao)
+        catch (ConflitoDeIdentidadeException ex)
         {
-            return Result.Fail(ErrosDeCliente.ConflitoDeIdentidade(excecao.Message));
+            return Result.Fail(ErrosDeCliente.ConflitoDeIdentidade(ex.Message));
         }
         catch (ConflitoDePersistenciaException)
         {

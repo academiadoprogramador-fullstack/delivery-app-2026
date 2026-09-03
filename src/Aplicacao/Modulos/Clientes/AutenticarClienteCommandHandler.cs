@@ -1,4 +1,3 @@
-using DeliveryApp.Aplicacao.Compartilhado;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using FluentResults;
 using MediatR;
@@ -33,11 +32,13 @@ public sealed class AutenticarClienteCommandHandler(
         );
 
         if (usuario is null)
-            return Result.Fail(new Error("O endereço de email ou senha informados são inválidos.")
-                .WithMetadata(nameof(TipoErro), TipoErro.Validacao)
-                .WithMetadata("Campo", "Credenciais"));
+            return Result.Fail(ErrosDeCliente.CredenciaisInvalidas());
 
-        var accessToken = emissorDeTokens.CriarToken(usuario.Id, usuario.Email, TipoUsuario.Cliente);
+        var accessToken = emissorDeTokens.CriarToken(
+            usuario.Id,
+            usuario.Email,
+            TipoUsuario.Cliente
+        );
 
         return Result.Ok(new AccessTokenDoUsuarioDto(
             usuario.Id,
