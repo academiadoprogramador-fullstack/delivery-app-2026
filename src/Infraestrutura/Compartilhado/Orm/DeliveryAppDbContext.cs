@@ -1,8 +1,9 @@
+using DeliveryApp.Dominio.Compartilhado.Auth;
+using DeliveryApp.Dominio.Modulos.Clientes;
+using DeliveryApp.Dominio.Modulos.Estabelecimentos;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using DeliveryApp.Dominio.Compartilhado.Auth;
-using DeliveryApp.Dominio.Modulos.Clientes;
 
 namespace DeliveryApp.Infraestrutura.Compartilhado.Orm;
 
@@ -12,8 +13,10 @@ public sealed class DeliveryAppDbContext(
 ) : IdentityDbContext<IdentityUser<Guid>, IdentityRole<Guid>, Guid>(options)
 {
     private static readonly Guid TipoUsuarioClienteId = new("01a058f4-a048-79a3-b1a6-0f01d629a126");
+    private static readonly Guid TipoUsuarioEstabelecimentoId = new("019958f4-a048-70a3-b1a6-0f01d629a127");
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<Estabelecimento> Estabelecimentos => Set<Estabelecimento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,13 +33,37 @@ public sealed class DeliveryAppDbContext(
             ConcurrencyStamp = "01a058f7-9492-73bc-8e4b-934c53594ed6"
         });
 
-        if (provedorDeUsuario is not null)
+        modelBuilder.Entity<IdentityRole<Guid>>().HasData(new IdentityRole<Guid>
         {
-        }
+            Id = TipoUsuarioEstabelecimentoId,
+            Name = TipoUsuario.Estabelecimento.ToString(),
+            NormalizedName = TipoUsuario.Estabelecimento.ToString().ToUpperInvariant(),
+            ConcurrencyStamp = "019958f7-9492-73bc-8e4b-934c53594ed7"
+        });
+
     }
 
     public override int SaveChanges()
     {
+        ValidarEntidadesDoUsuario();
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        ValidarEntidadesDoUsuario();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void ValidarEntidadesDoUsuario()
+    {
+        var entradas = ChangeTracker.Entries<IEntidadeDeUsuario>()
+            .Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+            .ToList();
+
+        if (entradas.Count == 0)
+            return;
+
         Guid? usuarioId = provedorDeUsuario?.Id;
 
         if (!usuarioId.HasValue)
@@ -46,7 +73,7 @@ public sealed class DeliveryAppDbContext(
             );
         }
 
-        foreach (var entry in ChangeTracker.Entries<IEntidadeDeUsuario>())
+        foreach (var entry in entradas)
         {
             Guid usuarioOriginalId = Guid.Empty;
 
@@ -75,15 +102,15 @@ public sealed class DeliveryAppDbContext(
 
                     Guid idAtualUsuario = entry
                         .Property(nameof(IEntidadeDeUsuario.UsuarioId))
-                        .OriginalValue is Guid idAtual
+                        .CurrentValue is Guid idAtual
                         ? idAtual
                         : Guid.Empty;
 
                     if (usuarioOriginalId != idAtualUsuario)
                     {
                         throw new UnauthorizedAccessException(
-                              "Não é permitido alterar o usuário de uma entidade."
-                          );
+                            "Não é permitido alterar o usuário de uma entidade."
+                        );
                     }
 
                     if (idAtualUsuario != usuarioId.Value)
@@ -112,7 +139,5 @@ public sealed class DeliveryAppDbContext(
                     break;
             }
         }
-
-        return base.SaveChanges();
     }
 }

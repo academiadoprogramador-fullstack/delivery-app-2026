@@ -45,12 +45,28 @@ public sealed class GerenciadorDeIdentidade(
             await userManager.DeleteAsync(usuario);
     }
 
-    public async Task<UsuarioDto?> ChecarValidadeDeSenhaAsync(string email, string senha)
+    public async Task<UsuarioDto?> ChecarValidadeDeSenhaAsync(
+        string email,
+        string senha,
+        TipoUsuario tipo
+    )
     {
         var usuario = await userManager.FindByEmailAsync(email);
 
-        if (usuario is null || !await userManager.CheckPasswordAsync(usuario, senha))
+        if (usuario is null || await userManager.IsLockedOutAsync(usuario))
             return null;
+
+        if (!await userManager.CheckPasswordAsync(usuario, senha))
+        {
+            await userManager.AccessFailedAsync(usuario);
+            return null;
+        }
+
+        if (!await userManager.IsInRoleAsync(usuario, tipo.ToString()))
+            return null;
+
+        if (usuario.AccessFailedCount > 0)
+            await userManager.ResetAccessFailedCountAsync(usuario);
 
         return new UsuarioDto(usuario.Id, usuario.Email!);
     }

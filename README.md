@@ -8,11 +8,11 @@ API REST em .NET 10 para gerenciamento de clientes e estabelecimentos de uma pla
 
 ### Entidade `Cliente`
 
-| Propriedade | Descrição                                                                    |
-| ----------- | ---------------------------------------------------------------------------- |
-| `Id`        | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1.  |
-| `Nome`      | Nome do cliente, com 2 a 100 caracteres.                                     |
-| `Cpf`       | Documento único do cliente, composto por exatamente 11 dígitos.              |
+| Propriedade | Descrição                                                                   |
+| ----------- | --------------------------------------------------------------------------- |
+| `Id`        | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1. |
+| `Nome`      | Nome do cliente, com 2 a 100 caracteres.                                    |
+| `Cpf`       | Documento único do cliente, composto por exatamente 11 dígitos.             |
 
 ### Cadastro de clientes
 
@@ -22,8 +22,7 @@ API REST em .NET 10 para gerenciamento de clientes e estabelecimentos de uma pla
 - impede a duplicidade de CPF por validação e índice único no banco;
 - exige email único;
 - exige senha com pelo menos 8 caracteres, um dígito e um caractere não alfanumérico;
-- associa o usuário ao papel `Cliente`;
-- retorna um token JWT após o cadastro.
+- associa o usuário ao papel `Cliente`.
 
 ### Autenticação
 
@@ -35,11 +34,11 @@ API REST em .NET 10 para gerenciamento de clientes e estabelecimentos de uma pla
 
 ### Endpoints
 
-| Método | Rota                        | Acesso  | Descrição                         |
-| ------ | --------------------------- | ------- | --------------------------------- |
-| `POST` | `/api/clientes/cadastro`    | Público | Cadastra e autentica um cliente.  |
-| `POST` | `/api/clientes/login`       | Público | Autentica um cliente.             |
-| `GET`  | `/api/clientes/{clienteId}` | Cliente | Consulta um cliente pelo seu ID.  |
+| Método | Rota                        | Acesso  | Descrição                        |
+| ------ | --------------------------- | ------- | -------------------------------- |
+| `POST` | `/api/clientes/cadastro`    | Público | Cadastra um cliente.             |
+| `POST` | `/api/clientes/login`       | Público | Autentica um cliente.            |
+| `GET`  | `/api/clientes/{clienteId}` | Cliente | Consulta um cliente pelo seu ID. |
 
 Os demais endpoints ficam protegidos por uma política global que exige autenticação. Rotas públicas precisam ser marcadas explicitamente com `AllowAnonymous`.
 
@@ -54,7 +53,16 @@ Exemplo de cadastro:
 }
 ```
 
-O cadastro responde com `201 Created`; o login, com `200 OK`. Ambos retornam o mesmo formato:
+O cadastro responde com `201 Created`:
+
+```json
+{
+  "id": "01900000-0000-7000-8000-000000000000",
+  "nome": "Cliente Exemplo"
+}
+```
+
+O login responde com `200 OK`:
 
 ```json
 {
@@ -68,25 +76,33 @@ Erros HTTP seguem o formato Problem Details e incluem o `traceId` quando tratado
 
 ### Entidade `Estabelecimento`
 
-| Propriedade         | Descrição                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `Id`                | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1.          |
-| `NomeComercial`     | Nome utilizado comercialmente.                                                       |
-| `Documento`         | CPF ou CNPJ do estabelecimento.                                                       |
-| `Endereco`          | Endereço do estabelecimento.                                                          |
-| `Telefone`          | Telefone para contato.                                                                |
-| `HorarioAbertura`   | Início do período diário de atendimento.                                              |
-| `HorarioFechamento` | Final do período diário de atendimento.                                               |
-| `AreaAtendimento`   | Descrição das regiões atendidas.                                                      |
-| `Ativo`             | Indica se o estabelecimento está disponível para receber novos pedidos.               |
+| Propriedade         | Descrição                                                                   |
+| ------------------- | --------------------------------------------------------------------------- |
+| `Id`                | Chave primária compartilhada e chave estrangeira do usuário na relação 1:1. |
+| `NomeComercial`     | Nome único, com 2 a 100 caracteres.                                          |
+| `Documento`         | CPF ou CNPJ; pode ser compartilhado por vários estabelecimentos.            |
+| `Endereco`          | Endereço do estabelecimento, com 5 a 250 caracteres.                        |
+| `Telefone`          | Telefone para contato, com 10 ou 11 dígitos.                                |
+| `HorarioAbertura`   | Início do período diário de atendimento.                                    |
+| `HorarioFechamento` | Final do período diário de atendimento.                                     |
+| `AreaAtendimento`   | Descrição das regiões atendidas, com 2 a 500 caracteres.                    |
+| `Ativo`             | Indica se o estabelecimento está habilitado para receber pedidos.           |
+
+O cadastro cria um usuário exclusivo para cada estabelecimento, mesmo quando vários
+estabelecimentos compartilham o mesmo documento. O nome comercial é comparado sem
+distinção entre maiúsculas e minúsculas e deve ser único.
+
+Um estabelecimento está disponível quando está ativo e o horário atual está entre
+`HorarioAbertura` e `HorarioFechamento`. Períodos que atravessam a meia-noite são
+aceitos, e o fuso horário usado nessa avaliação é configurável.
 
 ### Endpoints de estabelecimentos
 
 | Método  | Rota                                                  | Acesso                     | Descrição                                |
 | ------- | ----------------------------------------------------- | -------------------------- | ---------------------------------------- |
-| `POST`  | `/api/estabelecimentos/cadastro`                      | Público                    | Cadastra e autentica um estabelecimento. |
+| `POST`  | `/api/estabelecimentos/cadastro`                      | Público                    | Cadastra um estabelecimento.             |
 | `POST`  | `/api/estabelecimentos/login`                         | Público                    | Autentica um estabelecimento.            |
-| `GET`   | `/api/estabelecimentos`                               | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
+| `GET`   | `/api/estabelecimentos`                               | Cliente ou Estabelecimento | Lista estabelecimentos cadastrados.      |
 | `GET`   | `/api/estabelecimentos/disponiveis`                   | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
 | `GET`   | `/api/estabelecimentos/{estabelecimentoId}`           | Cliente ou Estabelecimento | Consulta um estabelecimento.             |
 | `PUT`   | `/api/estabelecimentos/{estabelecimentoId}`           | Estabelecimento            | Edita o estabelecimento vinculado.       |
@@ -97,17 +113,17 @@ Erros HTTP seguem o formato Problem Details e incluem o `traceId` quando tratado
 
 A solução está dividida em quatro projetos:
 
-| Projeto                      | Responsabilidade                                                          |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| `DeliveryApp.Dominio`        | Entidades, contratos compartilhados e validações de domínio.              |
-| `DeliveryApp.Aplicacao`      | Serviços de aplicação e tipos compartilhados de resultado.                |
+| Projeto                      | Responsabilidade                                                           |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `DeliveryApp.Dominio`        | Entidades, contratos compartilhados e validações de domínio.               |
+| `DeliveryApp.Aplicacao`      | Serviços de aplicação e tipos compartilhados de resultado.                 |
 | `DeliveryApp.Infraestrutura` | EF Core, ASP.NET Core Identity, migrations e acesso ao PostgreSQL.         |
 | `DeliveryApp.WebApi`         | Controllers, autenticação JWT, Problem Details, OpenAPI e observabilidade. |
 
 O `DeliveryAppDbContext` herda de `IdentityDbContext` e mantém os dados de identidade e de domínio no mesmo banco. As entidades de perfil seguem o padrão de chave primária compartilhada com o Identity:
 
-| Entidade          | Modelagem da identidade                                                               |
-| ----------------- | ------------------------------------------------------------------------------------- |
+| Entidade          | Modelagem da identidade                                                                |
+| ----------------- | -------------------------------------------------------------------------------------- |
 | `Cliente`         | O `Id` é a chave primária e também a chave estrangeira do usuário, em uma relação 1:1. |
 | `Estabelecimento` | O `Id` é a chave primária e também a chave estrangeira do usuário, em uma relação 1:1. |
 
@@ -163,6 +179,12 @@ As demais opções do JWT ficam em `src/Api/appsettings.json`:
 | `Jwt:Issuer`             | `delivery-app-api`    |
 | `Jwt:Audience`           | `delivery-app-client` |
 | `Jwt:AccessTokenMinutes` | `60`                  |
+
+O horário comercial dos estabelecimentos usa a configuração:
+
+| Chave                              | Valor padrão        |
+| ---------------------------------- | ------------------- |
+| `Estabelecimentos:FusoHorario`     | `America/Sao_Paulo` |
 
 ## Execução
 

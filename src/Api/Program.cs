@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using DeliveryApp.Aplicacao;
+using DeliveryApp.Dominio.Compartilhado;
 using DeliveryApp.Infraestrutura;
 using DeliveryApp.Infraestrutura.Compartilhado.Orm;
 using DeliveryApp.WebApi.Compartilhado.Auth;
+using DeliveryApp.WebApi.Compartilhado.Horario;
 using DeliveryApp.WebApi.Compartilhado.Http;
 using DeliveryApp.WebApi.Compartilhado.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -26,11 +28,19 @@ builder.Services
     .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
     .Configure<IOptions<JwtOptions>>(JwtExtensions.ConfigureJwtBearerValidation);
 
+builder.Services
+    .AddOptions<HorarioOptions>()
+    .BindConfiguration(HorarioOptions.SectionName)
+    .Validate(o => ProvedorDeHorario.FusoHorarioValido(o.FusoHorario), "O fuso horário configurado é inválido.")
+    .ValidateOnStart();
+
 // Configuração de serviços
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddJwtAuthServices();
 builder.Services.AddSerilogServices(builder.Logging);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IProvedorDeHorario, ProvedorDeHorario>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

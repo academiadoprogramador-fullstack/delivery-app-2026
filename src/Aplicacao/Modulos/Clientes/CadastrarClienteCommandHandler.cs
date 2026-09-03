@@ -1,4 +1,4 @@
-using System.Data.Common;
+using DeliveryApp.Dominio.Compartilhado;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
@@ -41,7 +41,7 @@ public sealed class CadastrarClienteCommandHandler(
 
         try
         {
-            UsuarioDto usuario = await gerenciadorDeIdentidade.CadastrarAsync(
+            await gerenciadorDeIdentidade.CadastrarAsync(
                 cliente.Id,
                 command.Email,
                 command.Senha,
@@ -49,7 +49,6 @@ public sealed class CadastrarClienteCommandHandler(
             );
 
             await repositorioCliente.CadastrarAsync(cliente, cancellationToken);
-
             return Result.Ok(cliente.Id);
         }
         catch (ValidacaoDeIdentidadeException excecao)
@@ -60,10 +59,9 @@ public sealed class CadastrarClienteCommandHandler(
         {
             return Result.Fail(ErrosDeCliente.ConflitoDeIdentidade(excecao.Message));
         }
-        catch (DbException)
+        catch (ConflitoDePersistenciaException)
         {
             await gerenciadorDeIdentidade.ExcluirAsync(cliente.Id);
-
             return Result.Fail(ErrosDeCliente.CadastroDuplicado());
         }
     }

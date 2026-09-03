@@ -28,12 +28,14 @@ public sealed class AutenticarClienteCommandHandler(
     {
         var usuario = await gerenciadorDeIdentidade.ChecarValidadeDeSenhaAsync(
             request.Email,
-            request.Senha
+            request.Senha,
+            TipoUsuario.Cliente
         );
 
         if (usuario is null)
             return Result.Fail(new Error("O endereço de email ou senha informados são inválidos.")
-                    .WithMetadata(nameof(TipoErro), TipoErro.Validacao));
+                    .WithMetadata(nameof(TipoErro), TipoErro.Validacao)
+                    .WithMetadata("Campo", "Credenciais"));
 
         var accessToken = emissorDeTokens.CriarToken(usuario.Id, usuario.Email, TipoUsuario.Cliente);
 

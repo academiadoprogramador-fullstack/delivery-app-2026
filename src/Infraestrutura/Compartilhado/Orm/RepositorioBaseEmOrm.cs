@@ -1,5 +1,6 @@
 using DeliveryApp.Dominio.Compartilhado;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace DeliveryApp.Infraestrutura.Compartilhado.Orm;
 
@@ -11,7 +12,7 @@ public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) wh
     {
         registros.Add(entidade);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await SalvarAlteracoesAsync(cancellationToken);
     }
 
     public async Task<bool> EditarAsync(
@@ -27,7 +28,7 @@ public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) wh
 
         registroSelecionado.Atualizar(entidadeAtualizada);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await SalvarAlteracoesAsync(cancellationToken);
 
         return true;
     }
@@ -41,18 +42,35 @@ public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) wh
 
         registros.Remove(TSelecionado);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await SalvarAlteracoesAsync(cancellationToken);
 
         return true;
     }
 
     public virtual async Task<T?> SelecionarPorIdAsync(Guid idSelecionado, CancellationToken cancellationToken = default)
     {
-        return await registros.SingleOrDefaultAsync(c => c.Id == idSelecionado);
+        return await registros.SingleOrDefaultAsync(c => c.Id == idSelecionado, cancellationToken);
     }
 
     public virtual async Task<List<T>> SelecionarTodosAsync(CancellationToken cancellationToken = default)
     {
-        return await registros.ToListAsync();
+        return await registros.ToListAsync(cancellationToken);
+    }
+
+    protected async Task SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException excecao) when (
+            excecao.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation
+            })
+        {
+            dbContext.ChangeTracker.Clear();
+            throw new ConflitoDePersistenciaException();
+        }
     }
 }
