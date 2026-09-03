@@ -6,6 +6,13 @@ namespace DeliveryApp.Aplicacao.Modulos.Estabelecimentos.Util;
 
 public static class ErrosDeEstabelecimento
 {
+    public static Error CredenciaisInvalidas()
+    {
+        return new Error("O endereço de email ou senha informados são inválidos.")
+            .WithMetadata(nameof(TipoErro), TipoErro.Validacao)
+            .WithMetadata("Campo", "Credenciais");
+    }
+
     public static Error CadastroDuplicado()
     {
         return new Error("Já existe um estabelecimento cadastrado com este nome comercial.")

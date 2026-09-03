@@ -13,7 +13,15 @@ public sealed record CadastrarEstabelecimentoRequest(
 );
 
 public sealed record CadastrarEstabelecimentoResponse(
-    Guid EstabelecimentoId,
+    Guid Id,
     string NomeComercial
+);
+
+public sealed record AutenticarEstabelecimentoRequest(string Email, string Senha);
+
+public sealed record AutenticarEstabelecimentoResponse(
+    Guid EstabelecimentoId,
+    string AccessToken,
+    DateTime DataExpiracaoEmUtc
 );
 
