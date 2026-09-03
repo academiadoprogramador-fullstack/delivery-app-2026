@@ -1,7 +1,7 @@
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using Microsoft.AspNetCore.Identity;
 
-namespace DeliveryApp.Infraestrutura.Auth;
+namespace DeliveryApp.Infraestrutura.Compartilhado.Auth;
 
 public sealed class GerenciadorDeIdentidade(
     UserManager<IdentityUser<Guid>> userManager

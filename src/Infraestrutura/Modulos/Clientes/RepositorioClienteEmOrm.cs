@@ -1,5 +1,5 @@
 using DeliveryApp.Dominio.Modulos.Clientes;
-using DeliveryApp.Infraestrutura.Orm;
+using DeliveryApp.Infraestrutura.Compartilhado.Orm;
 
 namespace DeliveryApp.Infraestrutura.Modulos.Clientes;
 

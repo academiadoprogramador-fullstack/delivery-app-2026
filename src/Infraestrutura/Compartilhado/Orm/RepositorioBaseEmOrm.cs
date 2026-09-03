@@ -1,7 +1,7 @@
 using DeliveryApp.Dominio.Compartilhado;
 using Microsoft.EntityFrameworkCore;
 
-namespace DeliveryApp.Infraestrutura.Orm;
+namespace DeliveryApp.Infraestrutura.Compartilhado.Orm;
 
 public abstract class RepositorioBaseEmOrm<T>(DeliveryAppDbContext dbContext) where T : EntidadeBase<T>
 {

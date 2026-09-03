@@ -1,6 +1,4 @@
 using System.Data.Common;
-using DeliveryApp.Aplicacao.Compartilhado;
-using DeliveryApp.Dominio.Compartilhado;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using FluentResults;
@@ -34,24 +32,12 @@ public sealed class CadastrarClienteCommandHandler(
         var erros = cliente.Validar();
 
         if (erros.Count > 0)
-        {
-            var resultado = Result.Ok();
-
-            foreach (ErroValidacao erro in erros)
-                resultado.WithError(TipoErro.Validacao.ObterMetadados(erro.Campo, erro.Mensagem));
-
-            return resultado;
-        }
+            return Result.Fail(ErrosDeCliente.Validacao(erros));
 
         var clientes = await repositorioCliente.SelecionarTodosAsync(cancellationToken);
 
         if (clientes.Any(registro => registro.Cpf == cliente.Cpf))
-        {
-            return Result.Fail(
-                new Error("Um cliente com este CPF já foi cadastrado.")
-                    .WithMetadata(nameof(TipoErro), TipoErro.Conflito)
-            );
-        }
+            return Result.Fail(ErrosDeCliente.CpfDuplicado());
 
         try
         {
