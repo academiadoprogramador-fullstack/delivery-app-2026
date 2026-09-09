@@ -86,6 +86,15 @@ Erros HTTP seguem o formato Problem Details e incluem o `traceId` quando tratado
 | ------ | -------------------------------- | ------- | ---------------------------------------- |
 | `POST` | `/api/estabelecimentos/cadastro` | Público | Cadastra e autentica um estabelecimento. |
 | `POST` | `/api/estabelecimentos/login`    | Público | Autentica um estabelecimento.            |
+| `GET`  | `/api/estabelecimentos/disponiveis` | Cliente ou Estabelecimento | Lista somente estabelecimentos ativos. |
+| `GET`  | `/api/estabelecimentos/{estabelecimentoId}` | Cliente ou Estabelecimento | Consulta um estabelecimento por ID. |
+| `PUT`  | `/api/estabelecimentos/{estabelecimentoId}` | Estabelecimento vinculado | Edita os dados do estabelecimento. |
+| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/ativar` | Estabelecimento vinculado | Ativa o estabelecimento. |
+| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/desativar` | Estabelecimento vinculado | Desativa o estabelecimento. |
+
+Não existe uma rota `GET /api/estabelecimentos` genérica; a listagem disponível é feita exclusivamente por `/disponiveis`.
+
+As operações de edição, ativação e desativação somente podem ser executadas pelo usuário autenticado vinculado ao estabelecimento informado na rota.
 
 ### Módulo de cardápio
 
