@@ -2,7 +2,7 @@
 
 Desenvolvido durante o curso Fullstack da [Academia do Programador 2026](https://www.academiadoprogramador.net).
 
-API REST em .NET 10 para gerenciamento de clientes e estabelecimentos de uma plataforma de pedidos e entregas, com ASP.NET Core Identity, autenticação JWT e persistência em PostgreSQL.
+API REST em .NET 10 para gerenciamento de clientes, estabelecimentos e cardápios de uma plataforma de pedidos e entregas, com ASP.NET Core Identity, autenticação JWT e persistência em PostgreSQL.
 
 ## Referência funcional
 
@@ -82,16 +82,75 @@ Erros HTTP seguem o formato Problem Details e incluem o `traceId` quando tratado
 
 ### Endpoints de estabelecimentos
 
-| Método  | Rota                                                  | Acesso                     | Descrição                                |
-| ------- | ----------------------------------------------------- | -------------------------- | ---------------------------------------- |
-| `POST`  | `/api/estabelecimentos/cadastro`                      | Público                    | Cadastra e autentica um estabelecimento. |
-| `POST`  | `/api/estabelecimentos/login`                         | Público                    | Autentica um estabelecimento.            |
-| `GET`   | `/api/estabelecimentos`                               | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
-| `GET`   | `/api/estabelecimentos/disponiveis`                   | Cliente ou Estabelecimento | Lista estabelecimentos disponíveis.      |
-| `GET`   | `/api/estabelecimentos/{estabelecimentoId}`           | Cliente ou Estabelecimento | Consulta um estabelecimento.             |
-| `PUT`   | `/api/estabelecimentos/{estabelecimentoId}`           | Estabelecimento            | Edita o estabelecimento vinculado.       |
-| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/ativar`    | Estabelecimento            | Ativa o estabelecimento vinculado.       |
-| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/desativar` | Estabelecimento            | Desativa o estabelecimento vinculado.    |
+| Método | Rota                             | Acesso  | Descrição                                |
+| ------ | -------------------------------- | ------- | ---------------------------------------- |
+| `POST` | `/api/estabelecimentos/cadastro` | Público | Cadastra e autentica um estabelecimento. |
+| `POST` | `/api/estabelecimentos/login`    | Público | Autentica um estabelecimento.            |
+
+### Módulo de cardápio
+
+O cardápio é composto por categorias, produtos e complementos. Imagens ainda não fazem parte do módulo.
+
+#### Entidade `Categoria`
+
+| Propriedade         | Descrição                                  |
+| ------------------- | ------------------------------------------ |
+| `Id`                | Identificador da categoria.                |
+| `EstabelecimentoId` | Estabelecimento proprietário da categoria. |
+| `Nome`              | Nome entre 2 e 100 caracteres.             |
+
+#### Entidade `Produto`
+
+| Propriedade         | Descrição                                          |
+| ------------------- | -------------------------------------------------- |
+| `Id`                | Identificador do produto.                          |
+| `EstabelecimentoId` | Estabelecimento proprietário do produto.           |
+| `CategoriaId`       | Categoria do produto.                              |
+| `Nome`              | Nome entre 2 e 100 caracteres.                     |
+| `Descricao`         | Descrição obrigatória, com até 1000 caracteres.    |
+| `Preco`             | Preço maior que zero, com até duas casas decimais. |
+| `Ativo`             | Define se aparece no cardápio disponível.          |
+
+#### Entidade `Complemento`
+
+| Propriedade        | Descrição                                |
+| ------------------ | ---------------------------------------- |
+| `Id`               | Identificador do complemento.            |
+| `ProdutoId`        | Produto ao qual o complemento pertence. |
+| `Nome`             | Nome entre 2 e 100 caracteres.           |
+| `PrecoAdicional`   | Valor maior ou igual a zero.             |
+
+Complementos são cadastrados e editados junto com o produto. Não existem grupos ou regras de quantidade nesta versão.
+
+#### Endpoints de categorias
+
+| Método | Rota                                                                       | Acesso                    | Descrição          |
+| ------ | -------------------------------------------------------------------------- | ------------------------- | ------------------ |
+| `POST` | `/api/estabelecimentos/{estabelecimentoId}/categorias`                    | Estabelecimento vinculado | Cadastra categoria. |
+| `GET`  | `/api/estabelecimentos/{estabelecimentoId}/categorias`                    | Estabelecimento vinculado | Lista categorias.   |
+| `PUT`  | `/api/estabelecimentos/{estabelecimentoId}/categorias/{categoriaId}`      | Estabelecimento vinculado | Edita categoria.    |
+
+#### Endpoints de produtos
+
+| Método  | Rota                                                                          | Acesso                    | Descrição                         |
+| ------- | ----------------------------------------------------------------------------- | ------------------------- | --------------------------------- |
+| `POST`  | `/api/estabelecimentos/{estabelecimentoId}/produtos`                        | Estabelecimento vinculado | Cadastra produto.                 |
+| `GET`   | `/api/estabelecimentos/{estabelecimentoId}/produtos`                        | Estabelecimento vinculado | Lista produtos ativos e inativos. |
+| `PUT`   | `/api/estabelecimentos/{estabelecimentoId}/produtos/{produtoId}`             | Estabelecimento vinculado | Edita produto e complementos.     |
+| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/produtos/{produtoId}/ativar`      | Estabelecimento vinculado | Ativa produto.                    |
+| `PATCH` | `/api/estabelecimentos/{estabelecimentoId}/produtos/{produtoId}/desativar`   | Estabelecimento vinculado | Desativa produto.                 |
+
+#### Consulta do cardápio vigente
+
+| Método | Rota                                                        | Acesso  | Descrição                                         |
+| ------ | ----------------------------------------------------------- | ------- | ------------------------------------------------- |
+| `GET`  | `/api/estabelecimentos/{estabelecimentoId}/cardapio`        | Público | Consulta o cardápio agrupado por categoria.       |
+
+O cardápio público só pode ser consultado quando o estabelecimento está ativo. Produtos inativos não são retornados. O endpoint responde `404 Not Found` quando o estabelecimento não existe ou está inativo.
+
+Somente o usuário autenticado do estabelecimento vinculado pode criar, editar, ativar ou desativar categorias e produtos. O vínculo é validado pela role `Estabelecimento` e pelo identificador do usuário autenticado.
+
+O módulo de pedidos ainda não está implementado. Quando ele for criado, deverá copiar o preço do produto e dos complementos no momento da confirmação, preservando o valor histórico do pedido.
 
 ## Arquitetura
 
@@ -112,6 +171,8 @@ O `DeliveryAppDbContext` herda de `IdentityDbContext` e mantém os dados de iden
 | `Estabelecimento` | O `Id` é a chave primária e também a chave estrangeira do usuário, em uma relação 1:1. |
 
 Assim, `Estabelecimento` não possui um `UsuarioId` separado: seu próprio `Id` identifica tanto o perfil de domínio quanto o usuário correspondente.
+
+O módulo de cardápio utiliza as tabelas `TBCategorias`, `TBProdutos` e `TBComplementos`. Produtos e categorias são vinculados ao estabelecimento por chave estrangeira, e produtos são vinculados à categoria do mesmo estabelecimento por uma chave estrangeira composta.
 
 ## Tecnologias
 
