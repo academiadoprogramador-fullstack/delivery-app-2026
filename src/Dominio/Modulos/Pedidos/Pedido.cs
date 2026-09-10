@@ -22,6 +22,8 @@ public sealed class Pedido : EntidadeBase<Pedido>
 
     public List<ItemPedido> Itens { get; private set; } = [];
 
+    private Pedido() { }
+
     public Pedido(
         Guid id,
         Guid clienteId,

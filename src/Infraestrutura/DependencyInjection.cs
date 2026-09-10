@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using DeliveryApp.Dominio.Modulos.Pedidos;
+using DeliveryApp.Infraestrutura.Modulos.Pedidos;
 
 namespace DeliveryApp.Infraestrutura;
 
@@ -26,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IRepositorioEstabelecimento, RepositorioEstabelecimentoEmOrm>();
         services.AddScoped<IRepositorioCategoria, RepositorioCategoriaEmOrm>();
         services.AddScoped<IRepositorioProduto, RepositorioProdutoEmOrm>();
+        services.AddScoped<IRepositorioPedido, RepositorioPedidoEmOrm>();
 
         services.AddDataProtection();
         services.AddIdentityCore<IdentityUser<Guid>>(options =>
