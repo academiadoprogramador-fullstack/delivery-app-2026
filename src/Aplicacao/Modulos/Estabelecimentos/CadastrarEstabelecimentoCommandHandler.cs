@@ -16,7 +16,8 @@ public sealed record CadastrarEstabelecimentoCommand(
     TimeOnly HorarioAbertura,
     TimeOnly HorarioFechamento,
     string Email,
-    string Senha
+    string Senha,
+    decimal TaxaEntrega = 0
 ) : IRequest<Result<Guid>>;
 
 public sealed class CadastrarEstabelecimentoCommandHandler(
@@ -37,7 +38,8 @@ public sealed class CadastrarEstabelecimentoCommandHandler(
             command.Telefone,
             command.AreaAtendimento,
             command.HorarioAbertura,
-            command.HorarioFechamento
+            command.HorarioFechamento,
+            command.TaxaEntrega
         );
 
         var erros = estabelecimento.Validar();
@@ -47,7 +49,7 @@ public sealed class CadastrarEstabelecimentoCommandHandler(
 
         try
         {
-            UsuarioDto usuario = await gerenciadorDeIdentidade.CadastrarAsync(
+            var usuario = await gerenciadorDeIdentidade.CadastrarAsync(
                 estabelecimento.Id,
                 command.Email,
                 command.Senha,

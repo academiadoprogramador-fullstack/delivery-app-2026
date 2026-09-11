@@ -15,7 +15,8 @@ public sealed record EditarEstabelecimentoCommand(
     string Telefone,
     string AreaAtendimento,
     TimeOnly HorarioAbertura,
-    TimeOnly HorarioFechamento
+    TimeOnly HorarioFechamento,
+    decimal TaxaEntrega = 0
 ) : IRequest<Result>;
 
 public sealed class EditarEstabelecimentoCommandHandler(
@@ -39,8 +40,10 @@ public sealed class EditarEstabelecimentoCommandHandler(
             command.Telefone,
             command.AreaAtendimento,
             command.HorarioAbertura,
-            command.HorarioFechamento
+            command.HorarioFechamento,
+            command.TaxaEntrega
         );
+
         var erros = estabelecimentoAtualizado.Validar();
 
         if (erros.Count > 0)
@@ -48,7 +51,7 @@ public sealed class EditarEstabelecimentoCommandHandler(
 
         try
         {
-            bool editado = await repositorioEstabelecimento.EditarAsync(
+            var editado = await repositorioEstabelecimento.EditarAsync(
                 command.EstabelecimentoId,
                 estabelecimentoAtualizado,
                 cancellationToken

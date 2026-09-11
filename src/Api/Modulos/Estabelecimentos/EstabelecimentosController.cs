@@ -30,7 +30,8 @@ public sealed class EstabelecimentosController(IMediator mediator) : ControllerB
             request.HorarioAbertura,
             request.HorarioFechamento,
             request.Email,
-            request.Senha
+            request.Senha,
+            request.TaxaEntrega ?? 0
         ), cancellationToken);
 
         if (!resultado.IsSuccess)
@@ -184,6 +185,7 @@ public sealed class EstabelecimentosController(IMediator mediator) : ControllerB
             estabelecimento.AreaAtendimento,
             estabelecimento.HorarioAbertura,
             estabelecimento.HorarioFechamento,
+            estabelecimento.TaxaEntrega,
             estabelecimento.Ativo
         );
     }

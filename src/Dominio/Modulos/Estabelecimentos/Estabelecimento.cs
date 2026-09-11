@@ -11,6 +11,7 @@ public sealed class Estabelecimento : EntidadeBase<Estabelecimento>
     public string AreaAtendimento { get; private set; } = string.Empty;
     public TimeOnly HorarioAbertura { get; private set; }
     public TimeOnly HorarioFechamento { get; private set; }
+    public decimal TaxaEntrega { get; private set; }
     public bool Ativo { get; private set; }
 
     private Estabelecimento() { }
@@ -23,7 +24,8 @@ public sealed class Estabelecimento : EntidadeBase<Estabelecimento>
         string telefone,
         string areaAtendimento,
         TimeOnly horarioAbertura,
-        TimeOnly horarioFechamento
+        TimeOnly horarioFechamento,
+        decimal taxaEntrega = 0
     )
     {
         Id = id;
@@ -34,6 +36,7 @@ public sealed class Estabelecimento : EntidadeBase<Estabelecimento>
         AreaAtendimento = areaAtendimento.Trim();
         HorarioAbertura = horarioAbertura;
         HorarioFechamento = horarioFechamento;
+        TaxaEntrega = taxaEntrega;
         Ativo = true;
     }
 
@@ -69,6 +72,9 @@ public sealed class Estabelecimento : EntidadeBase<Estabelecimento>
         if (AreaAtendimento.Length is < 2 or > 150)
             erros.Add(new(nameof(AreaAtendimento), "A área de atendimento deve possuir entre 2 e 150 caracteres."));
 
+        if (TaxaEntrega < 0)
+            erros.Add(new(nameof(TaxaEntrega), "A taxa de entrega não pode ser negativa."));
+
         return erros;
     }
 
@@ -81,6 +87,7 @@ public sealed class Estabelecimento : EntidadeBase<Estabelecimento>
         AreaAtendimento = entidadeAtualizada.AreaAtendimento;
         HorarioAbertura = entidadeAtualizada.HorarioAbertura;
         HorarioFechamento = entidadeAtualizada.HorarioFechamento;
+        TaxaEntrega = entidadeAtualizada.TaxaEntrega;
     }
 
     private static string NormalizarStringNumerica(string valor)

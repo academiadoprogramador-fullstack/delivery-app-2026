@@ -29,7 +29,7 @@ public sealed class ListarEstabelecimentosDisponiveisQueryHandler(
         );
     }
 
-    internal static EstabelecimentoDto ParaDto(Estabelecimento estabelecimento)
+    public static EstabelecimentoDto ParaDto(Estabelecimento estabelecimento)
     {
         return new EstabelecimentoDto(
             estabelecimento.Id,
@@ -40,6 +40,7 @@ public sealed class ListarEstabelecimentosDisponiveisQueryHandler(
             estabelecimento.AreaAtendimento,
             estabelecimento.HorarioAbertura,
             estabelecimento.HorarioFechamento,
+            estabelecimento.TaxaEntrega,
             estabelecimento.Ativo
         );
     }

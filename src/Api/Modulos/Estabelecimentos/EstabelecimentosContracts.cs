@@ -9,7 +9,8 @@ public sealed record CadastrarEstabelecimentoRequest(
     TimeOnly HorarioAbertura,
     TimeOnly HorarioFechamento,
     string Email,
-    string Senha
+    string Senha,
+    decimal? TaxaEntrega = 0
 );
 
 public sealed record CadastrarEstabelecimentoResponse(
@@ -26,6 +27,7 @@ public sealed record EstabelecimentoResponse(
     string AreaAtendimento,
     TimeOnly HorarioAbertura,
     TimeOnly HorarioFechamento,
+    decimal TaxaEntrega,
     bool Ativo
 );
 

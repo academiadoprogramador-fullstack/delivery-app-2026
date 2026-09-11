@@ -60,7 +60,7 @@ public sealed class CadastrarProdutoCommandHandler(
         }
     }
 
-    internal static Produto CriarProduto(CadastrarProdutoCommand command, Guid produtoId)
+    public static Produto CriarProduto(CadastrarProdutoCommand command, Guid produtoId)
     {
         return new Produto(
             produtoId,
@@ -221,7 +221,7 @@ public sealed class ListarProdutosQueryHandler(
         return Result.Ok<IReadOnlyList<ProdutoDto>>(produtos.Select(ParaDto).ToList());
     }
 
-    internal static ProdutoDto ParaDto(Produto produto)
+    public static ProdutoDto ParaDto(Produto produto)
     {
         return new ProdutoDto(
             produto.Id,
