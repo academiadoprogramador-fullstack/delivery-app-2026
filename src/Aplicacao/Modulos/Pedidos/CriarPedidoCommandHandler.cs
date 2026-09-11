@@ -8,7 +8,7 @@ namespace DeliveryApp.Aplicacao.Modulos.Pedidos;
 
 public sealed record ItemCriarPedidoCommand(
     Guid ProdutoId,
-    int Quantidade,
+    uint Quantidade,
     string? Observacao,
     IReadOnlyList<Guid> ComplementosIds
 );
