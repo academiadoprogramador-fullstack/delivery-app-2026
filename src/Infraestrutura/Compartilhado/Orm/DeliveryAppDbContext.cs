@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Cardapio;
 using DeliveryApp.Dominio.Modulos.Clientes;
 using DeliveryApp.Dominio.Modulos.Estabelecimentos;
 using DeliveryApp.Dominio.Modulos.Pedidos;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryApp.Infraestrutura.Compartilhado.Orm;
 

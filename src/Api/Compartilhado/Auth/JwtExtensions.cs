@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using System.Text;
+using DeliveryApp.Dominio.Compartilhado.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using DeliveryApp.Dominio.Compartilhado.Auth;
 
 namespace DeliveryApp.WebApi.Compartilhado.Auth;
 
