@@ -1,7 +1,9 @@
+using DeliveryApp.Aplicacao.Modulos.Pedidos.Mensageria;
 using DeliveryApp.Aplicacao.Modulos.Pedidos.Util;
 using DeliveryApp.Dominio.Compartilhado.Auth;
 using DeliveryApp.Dominio.Modulos.Pedidos;
 using FluentResults;
+using MassTransit;
 using MediatR;
 
 namespace DeliveryApp.Aplicacao.Modulos.Pedidos;
@@ -20,7 +22,8 @@ public sealed record CriarPedidoCommand(
 ) : IRequest<Result<Guid>>;
 
 public sealed class CriarPedidoCommandHandler(
-    IProvedorDeUsuario provedorDeUsuario
+    IProvedorDeUsuario provedorDeUsuario,
+    IPublishEndpoint publishEndpoint
 ) : IRequestHandler<CriarPedidoCommand, Result<Guid>>
 {
     public async Task<Result<Guid>> Handle(
@@ -43,6 +46,19 @@ public sealed class CriarPedidoCommandHandler(
         var solicitadoEmUtc = DateTimeOffset.UtcNow;
 
         // Criação e envio da CriarPedidoMessage
+        await publishEndpoint.Publish(new CriarPedidoMessage(
+            pedidoId,
+            clienteId,
+            command.EstabelecimentoId,
+            command.EnderecoEntrega,
+            command.Itens.Select(i => new ItemCriarPedidoMessage(
+                i.ProdutoId,
+                i.Quantidade,
+                i.Observacao,
+                i.ComplementosIds
+            )).ToList(),
+            solicitadoEmUtc
+        ), cancellationToken);
 
         return Result.Ok(pedidoId);
     }
