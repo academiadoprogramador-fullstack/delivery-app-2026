@@ -151,9 +151,18 @@ public sealed class AlterarStatusPedidoConsumer(
             context.CancellationToken
         );
 
-        if (pedido is null || pedido.Versao != mensagem.VersaoEsperada)
+        if (pedido is null)
+            throw new InvalidOperationException(
+                $"O pedido {mensagem.PedidoId} ainda não está disponível."
+            );
+
+        if (pedido.Versao != mensagem.VersaoEsperada)
         {
-            logger.LogInformation("A alteração do pedido {PedidoId} já foi processada.", mensagem.PedidoId);
+            logger.LogInformation(
+                "A alteração do pedido {PedidoId} já foi processada.",
+                mensagem.PedidoId
+            );
+
             return;
         }
 
