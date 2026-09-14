@@ -22,6 +22,8 @@ public static class DependencyInjection
 
         services.AddMassTransit(config =>
         {
+            config.SetKebabCaseEndpointNameFormatter();
+
             // Configura a injeção dos Consumers
             config.AddConsumer<CriarPedidoConsumer>();
             config.AddConsumer<AlterarStatusPedidoConsumer>();
@@ -34,14 +36,16 @@ public static class DependencyInjection
                 {
                     endpoint.PrefetchCount = 4; // Quantas mensagens o RabbitMQ deve carregar adiantado
                     endpoint.ConcurrentMessageLimit = 2; // Quantos consumers serão instanciados em paralelo
+                    endpoint.UseMessageRetry(DefaultMessageRetryIntervals); // Quantas re-tentativas serão feitas e o intervalo entre elas
 
                     endpoint.ConfigureConsumer<CriarPedidoConsumer>(context);
                 });
 
                 rabbitMq.ReceiveEndpoint("pedidos-atualizados", endpoint =>
                 {
-                    endpoint.PrefetchCount = 4; // Quantas mensagens o RabbitMQ deve carregar adiantado
-                    endpoint.ConcurrentMessageLimit = 2; // Quantos consumers serão instanciados em paralelo
+                    endpoint.PrefetchCount = 4;
+                    endpoint.ConcurrentMessageLimit = 2;
+                    endpoint.UseMessageRetry(DefaultMessageRetryIntervals);
 
                     endpoint.ConfigureConsumer<AlterarStatusPedidoConsumer>(context);
                 });
@@ -54,4 +58,10 @@ public static class DependencyInjection
             options.StartTimeout = TimeSpan.FromSeconds(30);
         });
     }
+
+    private static void DefaultMessageRetryIntervals(IRetryConfigurator retry) => retry.Intervals(
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(15)
+    );
 }
