@@ -24,6 +24,7 @@ public static class DependencyInjection
         {
             // Configura a injeção dos Consumers
             config.AddConsumer<CriarPedidoConsumer>();
+            config.AddConsumer<AlterarStatusPedidoConsumer>();
 
             config.UsingRabbitMq((context, rabbitMq) =>
             {
@@ -35,6 +36,14 @@ public static class DependencyInjection
                     endpoint.ConcurrentMessageLimit = 2; // Quantos consumers serão instanciados em paralelo
 
                     endpoint.ConfigureConsumer<CriarPedidoConsumer>(context);
+                });
+
+                rabbitMq.ReceiveEndpoint("pedidos-atualizados", endpoint =>
+                {
+                    endpoint.PrefetchCount = 4; // Quantas mensagens o RabbitMQ deve carregar adiantado
+                    endpoint.ConcurrentMessageLimit = 2; // Quantos consumers serão instanciados em paralelo
+
+                    endpoint.ConfigureConsumer<AlterarStatusPedidoConsumer>(context);
                 });
             });
         });

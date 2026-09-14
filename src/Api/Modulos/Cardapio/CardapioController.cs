@@ -1,4 +1,3 @@
-using DeliveryApp.Aplicacao.Compartilhado;
 using DeliveryApp.Aplicacao.Modulos.Cardapio;
 using DeliveryApp.Aplicacao.Modulos.Cardapio.DTOs;
 using DeliveryApp.Dominio.Compartilhado.Auth;

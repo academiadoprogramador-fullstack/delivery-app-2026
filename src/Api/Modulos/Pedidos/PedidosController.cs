@@ -49,6 +49,89 @@ public sealed class PedidosController(IMediator mediator) : ControllerBase
         );
     }
 
+    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
+    [HttpPatch("{pedidoId:guid}/aceite")]
+    public async Task<ActionResult<AlterarStatusPedidoResponse>> Aceitar(
+        Guid pedidoId,
+        CancellationToken cancellationToken
+    )
+    {
+        return await AlterarStatus(
+            pedidoId,
+            TipoUsuario.Estabelecimento,
+            AcaoPedido.Aceitar,
+            null,
+            cancellationToken
+        );
+    }
+
+    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
+    [HttpPatch("{pedidoId:guid}/recusa")]
+    public async Task<ActionResult<AlterarStatusPedidoResponse>> Recusar(
+        Guid pedidoId,
+        MotivoPedidoRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        return await AlterarStatus(
+            pedidoId,
+            TipoUsuario.Estabelecimento,
+            AcaoPedido.Recusar,
+            request.Motivo,
+            cancellationToken
+        );
+    }
+
+    [Authorize(Roles = nameof(TipoUsuario.Cliente))]
+    [HttpPatch("{pedidoId:guid}/cancelamento")]
+    public async Task<ActionResult<AlterarStatusPedidoResponse>> Cancelar(
+        Guid pedidoId,
+        MotivoPedidoRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        return await AlterarStatus(
+            pedidoId,
+            TipoUsuario.Cliente,
+            AcaoPedido.Cancelar,
+            request.Motivo,
+            cancellationToken
+        );
+    }
+
+    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
+    [HttpPatch("{pedidoId:guid}/inicio-entrega")]
+    public async Task<ActionResult<AlterarStatusPedidoResponse>> IniciarEntrega(
+        Guid pedidoId,
+        CancellationToken cancellationToken
+    )
+    {
+        return await AlterarStatus(
+            pedidoId,
+            TipoUsuario.Estabelecimento,
+            AcaoPedido.IniciarEntrega,
+            null,
+            cancellationToken
+        );
+    }
+
+    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
+    [HttpPatch("{pedidoId:guid}/conclusao")]
+    public async Task<ActionResult<AlterarStatusPedidoResponse>> Concluir(
+        Guid pedidoId,
+        CancellationToken cancellationToken
+    )
+    {
+        return await AlterarStatus(
+            pedidoId,
+            TipoUsuario.Estabelecimento,
+            AcaoPedido.Concluir,
+            null,
+            cancellationToken
+        );
+    }
+
+
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<PedidoDto>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<PedidoDto>>> Listar(CancellationToken cancellationToken)
@@ -81,88 +164,6 @@ public sealed class PedidosController(IMediator mediator) : ControllerBase
             return this.ProblemDetails(resultado);
 
         return Ok(resultado.Value);
-    }
-
-    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
-    [HttpPost("{pedidoId:guid}/aceite")]
-    public async Task<ActionResult<AlterarStatusPedidoResponse>> Aceitar(
-        Guid pedidoId,
-        CancellationToken cancellationToken
-    )
-    {
-        return await AlterarStatus(
-            pedidoId,
-            TipoUsuario.Estabelecimento,
-            AcaoPedido.Aceitar,
-            null,
-            cancellationToken
-        );
-    }
-
-    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
-    [HttpPost("{pedidoId:guid}/recusa")]
-    public async Task<ActionResult<AlterarStatusPedidoResponse>> Recusar(
-        Guid pedidoId,
-        MotivoPedidoRequest request,
-        CancellationToken cancellationToken
-    )
-    {
-        return await AlterarStatus(
-            pedidoId,
-            TipoUsuario.Estabelecimento,
-            AcaoPedido.Recusar,
-            request.Motivo,
-            cancellationToken
-        );
-    }
-
-    [Authorize(Roles = nameof(TipoUsuario.Cliente))]
-    [HttpPost("{pedidoId:guid}/cancelamento")]
-    public async Task<ActionResult<AlterarStatusPedidoResponse>> Cancelar(
-        Guid pedidoId,
-        MotivoPedidoRequest request,
-        CancellationToken cancellationToken
-    )
-    {
-        return await AlterarStatus(
-            pedidoId,
-            TipoUsuario.Cliente,
-            AcaoPedido.Cancelar,
-            request.Motivo,
-            cancellationToken
-        );
-    }
-
-    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
-    [HttpPost("{pedidoId:guid}/inicio-entrega")]
-    public async Task<ActionResult<AlterarStatusPedidoResponse>> IniciarEntrega(
-        Guid pedidoId,
-        CancellationToken cancellationToken
-    )
-    {
-        return await AlterarStatus(
-            pedidoId,
-            TipoUsuario.Estabelecimento,
-            AcaoPedido.IniciarEntrega,
-            null,
-            cancellationToken
-        );
-    }
-
-    [Authorize(Roles = nameof(TipoUsuario.Estabelecimento))]
-    [HttpPost("{pedidoId:guid}/conclusao")]
-    public async Task<ActionResult<AlterarStatusPedidoResponse>> Concluir(
-        Guid pedidoId,
-        CancellationToken cancellationToken
-    )
-    {
-        return await AlterarStatus(
-            pedidoId,
-            TipoUsuario.Estabelecimento,
-            AcaoPedido.Concluir,
-            null,
-            cancellationToken
-        );
     }
 
     private async Task<ActionResult<AlterarStatusPedidoResponse>> AlterarStatus(
