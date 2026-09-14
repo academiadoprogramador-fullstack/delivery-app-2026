@@ -1,3 +1,5 @@
+using DeliveryApp.Dominio.Modulos.Pedidos;
+
 namespace DeliveryApp.WebApi.Modulos.Pedidos;
 
 public sealed record ItemCriarPedidoRequest(
@@ -14,3 +16,7 @@ public sealed record CriarPedidoRequest(
 );
 
 public sealed record CriarPedidoResponse(Guid PedidoId);
+
+public sealed record AlterarStatusPedidoResponse(Guid PedidoId, AcaoPedido Acao);
+
+public sealed record MotivoPedidoRequest(string? Motivo);
